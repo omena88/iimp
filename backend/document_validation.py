@@ -6,6 +6,10 @@ from PIL import Image
 import PyPDF2
 import google.generativeai as genai
 from fastapi import UploadFile, HTTPException
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde .env
+load_dotenv()
 
 # Configurar Gemini AI
 # Obtener API key de variable de entorno
@@ -59,8 +63,8 @@ class DocumentValidator:
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error al procesar imagen: {str(e)}")
     
-    async def validate_sme_document(self, file: UploadFile, first_name: str, last_name: str) -> Dict[str, Any]:
-        """Valida documento SME usando IA con criterios estrictos"""
+    async def validate_sme_document(self, file: UploadFile, first_name: str, last_name: str, doc_type: Optional[str] = None, doc_number: Optional[str] = None) -> Dict[str, Any]:
+        """Valida documento SME usando IA con criterios estrictos y parámetros flexibles"""
         if not self.validate_file_type(file):
             return {
                 "valid": False,
@@ -78,48 +82,54 @@ class DocumentValidator:
         
         try:
             file_content = await file.read()
+            print(f"Archivo leído: {len(file_content)} bytes")
             
-            # Prompt estricto basado en la versión PHP estable
-            prompt = f"""Analiza este documento PDF o imagen y verifica si es un certificado válido de membresía SME (Sociedad Minera, Metalúrgica y de Explotación). 
+            # Prompt mejorado basado en pruebas exitosas
+            prompt = f"""Analiza este documento PDF o imagen y verifica si es un certificado válido de membresía SME (Society for Mining, Metallurgy & Exploration).
     
 CRITERIOS DE VALIDACIÓN ESTRICTOS:
-1. El documento DEBE ser un certificado oficial de SME (Sociedad Minera, Metalúrgica y de Explotación)
-2. DEBE contener el nombre completo del miembro que coincida con los datos proporcionados
-3. DEBE estar vigente (no expirado)
-4. DEBE ser legible y auténtico (no una copia falsificada)
-5. DEBE ser un documento oficial, no una captura de pantalla o imagen informal
+1. El documento DEBE ser un certificado oficial, carta de membresía, o credencial de SME (Society for Mining, Metallurgy & Exploration)
+2. DEBE contener el nombre completo del miembro que coincida exactamente con: {first_name} {last_name}
+3. DEBE estar vigente (verificar fechas de expiración si están presentes)
+4. DEBE ser legible y auténtico (evaluar calidad del documento)
+5. DEBE ser un documento oficial con membrete, firma, o sellos institucionales
+6. DEBE incluir información de membresía como ID de miembro, fechas de vigencia, o tipo de membresía
 
 DATOS DEL USUARIO A VERIFICAR:
-- Nombre: {first_name}
-- Apellido: {last_name}
+- Nombre completo: {first_name} {last_name}
 
 ANÁLISIS REQUERIDO:
-- Identifica el tipo de documento (certificado, carnet, credencial, etc.)
-- Extrae el nombre completo que aparece en el documento
-- Verifica si es un documento oficial de SME
-- Comprueba si está vigente
-- Evalúa la legibilidad y autenticidad
+- Identifica el tipo específico de documento SME (certificado, carta, credencial, etc.)
+- Extrae el nombre completo exacto que aparece en el documento
+- Verifica si es un documento oficial de SME con elementos de autenticidad
+- Comprueba fechas de vigencia si están disponibles
+- Evalúa la calidad, legibilidad y autenticidad del documento
+- Confirma que corresponde a membresía activa o certificación SME
 
 Responde ÚNICAMENTE con un JSON válido (sin markdown, sin backticks, sin formato adicional):
 {{
     "valid": true/false,
-    "reason": "explicación detallada de por qué es válido o inválido",
+    "reason": "explicación detallada y específica de por qué es válido o inválido",
     "confidence": 0-100,
-    "document_type": "tipo de documento identificado",
-    "member_name": "nombre completo encontrado en el documento",
+    "document_type": "tipo específico de documento identificado",
+    "member_name": "nombre completo exacto encontrado en el documento",
+    "member_id": "ID de miembro si está disponible",
+    "expiration_date": "fecha de expiración si está disponible",
     "analysis": {{
         "is_official_sme": true/false,
         "name_matches": true/false,
         "is_current": true/false,
         "is_legible": true/false,
-        "is_authentic": true/false
+        "is_authentic": true/false,
+        "has_official_elements": true/false
     }}
 }}
 
 IMPORTANTE: 
 - NO uses markdown, NO uses backticks, NO uses formato adicional
 - Responde SOLO el JSON puro
-- Si el documento no es un certificado oficial de SME, marca como inválido independientemente de otros factores."""
+- Si el documento no es de SME, marca como inválido
+- Sé específico en la razón de validación o rechazo"""
             
             # Configurar generación con parámetros estrictos
             generation_config = {
@@ -132,10 +142,12 @@ IMPORTANTE:
             if file.content_type == 'application/pdf':
                 # Procesar PDF
                 text_content = self.extract_text_from_pdf(file_content)
+                print(f"Enviando prompt a Gemini AI...")
                 response = self.model.generate_content(
                     [prompt, f"Contenido del documento: {text_content}"],
                     generation_config=generation_config
                 )
+                print(f"Respuesta de Gemini recibida: {response.text[:200]}...")
             else:
                 # Procesar imagen
                 img_base64 = self.process_image(file_content)
@@ -143,10 +155,12 @@ IMPORTANTE:
                     "mime_type": "image/jpeg",
                     "data": img_base64
                 }
+                print(f"Enviando prompt a Gemini AI...")
                 response = self.model.generate_content(
                     [prompt, image_part],
                     generation_config=generation_config
                 )
+                print(f"Respuesta de Gemini recibida: {response.text[:200]}...")
             
             # Procesar respuesta de Gemini
             result_text = response.text.strip()
@@ -176,6 +190,11 @@ IMPORTANTE:
                         "is_current": False,
                         "is_legible": False,
                         "is_authentic": False
+                    },
+                    "ai_details": {
+                        "prompt_sent": prompt,
+                        "raw_response": result_text,
+                        "parse_error": str(parse_error)
                     }
                 }
             
@@ -184,8 +203,20 @@ IMPORTANTE:
                 return {
                     "valid": False,
                     "reason": "Respuesta de validación inválida",
-                    "confidence": 0
+                    "confidence": 0,
+                    "ai_details": {
+                        "prompt_sent": prompt,
+                        "raw_response": result_text,
+                        "parsed_result": result if isinstance(result, dict) else "No es un diccionario válido"
+                    }
                 }
+            
+            # Agregar detalles de IA a la respuesta
+            result["ai_details"] = {
+                "prompt_sent": prompt,
+                "raw_response": result_text,
+                "parsed_successfully": True
+            }
             
             return result
             
@@ -230,45 +261,50 @@ IMPORTANTE:
             # Leer contenido del archivo
             file_content = await file.read()
             
-            # Prompt estricto basado en la versión PHP estable
-            prompt = f"""Analiza este documento PDF o imagen y verifica si es un documento válido que certifique que la persona es {academic_title} de una {academic_entity}.
+            # Prompt mejorado basado en pruebas exitosas
+            prompt = f"""Analiza este documento PDF o imagen y verifica si es un documento válido que certifique que la persona es {academic_title} de una institución educativa reconocida.
     
 CRITERIOS DE VALIDACIÓN ESTRICTOS:
-1. El documento DEBE ser un carnet universitario, credencial de docente, carta de la universidad, o documento oficial que certifique la condición de {academic_title}
-2. DEBE contener el nombre completo del {academic_title} que coincida con los datos proporcionados
-3. DEBE estar vigente (no expirado)
-4. DEBE ser legible y auténtico (no una copia falsificada)
-5. DEBE ser un documento oficial de una institución educativa reconocida
-6. DEBE especificar claramente que la persona es {academic_title}
+1. El documento DEBE ser un carnet universitario, credencial de {academic_title}, carta oficial de la universidad, constancia de trabajo, o documento oficial que certifique la condición de {academic_title}
+2. DEBE contener el nombre completo que coincida exactamente con: {first_name} {last_name}
+3. DEBE estar vigente (verificar fechas si están presentes)
+4. DEBE ser legible y auténtico (evaluar calidad del documento)
+5. DEBE ser un documento oficial de una institución educativa reconocida con membrete, firma, o sellos
+6. DEBE especificar claramente que la persona es {academic_title} (no otro tipo de relación con la institución)
+7. DEBE incluir información institucional como nombre de la universidad, facultad, departamento, o cargo específico
 
 DATOS DEL USUARIO A VERIFICAR:
-- Nombre: {first_name}
-- Apellido: {last_name}
-- Tipo: {academic_title}
+- Nombre completo: {first_name} {last_name}
+- Condición esperada: {academic_title}
 
 ANÁLISIS REQUERIDO:
-- Identifica el tipo de documento (carnet, credencial, carta, etc.)
-- Extrae el nombre completo que aparece en el documento
-- Verifica si es un documento oficial de una institución educativa
-- Comprueba si está vigente
-- Evalúa la legibilidad y autenticidad
-- Confirma que especifica la condición de {academic_title}
+- Identifica el tipo específico de documento académico (carnet, credencial, carta, constancia, etc.)
+- Extrae el nombre completo exacto que aparece en el documento
+- Verifica si es un documento oficial de una institución educativa reconocida
+- Comprueba fechas de vigencia o validez si están disponibles
+- Evalúa la calidad, legibilidad y elementos de autenticidad
+- Confirma que especifica claramente la condición de {academic_title}
+- Identifica la institución educativa y su reconocimiento
 
 Responde ÚNICAMENTE con un JSON válido (sin markdown, sin backticks, sin formato adicional):
 {{
     "valid": true/false,
-    "reason": "explicación detallada de por qué es válido o inválido",
+    "reason": "explicación detallada y específica de por qué es válido o inválido",
     "confidence": 0-100,
-    "document_type": "tipo de documento identificado",
-    "member_name": "nombre completo encontrado en el documento",
-    "institution": "nombre de la institución educativa",
+    "document_type": "tipo específico de documento identificado",
+    "member_name": "nombre completo exacto encontrado en el documento",
+    "institution": "nombre completo de la institución educativa",
+    "academic_position": "cargo o posición académica específica si está disponible",
+    "validity_period": "período de validez si está disponible",
     "analysis": {{
         "is_official_document": true/false,
         "name_matches": true/false,
         "is_current": true/false,
         "is_legible": true/false,
         "is_authentic": true/false,
-        "specifies_academic_status": true/false
+        "specifies_academic_status": true/false,
+        "institution_recognized": true/false,
+        "has_official_elements": true/false
     }}
 }}
 

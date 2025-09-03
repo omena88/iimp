@@ -198,23 +198,44 @@ async def delete_order(order_id: int):
 
 
 
+# IDs de productos hardcodeados desde productos.md
+PRODUCT_IDS = {
+    "CONVENCIONISTA_ASOCIADO_SME": 150,
+    "CONVENCIONISTA_DOCENTE": 151,
+    "CONVENCIONISTA_ESTUDIANTE": 152,
+    "CONVENCIONISTA_NO_ASOCIADO": 154,
+    "CONVENCIONISTA_ASOCIADO_ACTIVO": 155,
+    "EXTEMIN_WEEK": 158
+}
+
 @app.post("/api/v1/create-order-link")
 async def create_order_link(request: dict):
     """Crear enlace de pago personalizado para el checkout"""
     
     try:
-        # Generar ID único para la orden
-        order_id = f"order_{len(orders_db) + 1}_{hash(request.get('participant_email', '')) % 10000}"
+        # Validar que se proporcionen los campos requeridos
+        required_fields = ["product_id", "email", "nombres", "apellidos", "celular", "tipo_documento", "numero_documento"]
+        for field in required_fields:
+            if not request.get(field):
+                raise HTTPException(status_code=400, detail=f"Campo requerido faltante: {field}")
         
-        # Construir parámetros de URL
+        # Validar que el product_id sea válido
+        product_id = request.get("product_id")
+        if product_id not in PRODUCT_IDS.values():
+            raise HTTPException(status_code=400, detail=f"Product ID inválido: {product_id}")
+        
+        # Generar ID único para la orden
+        order_id = f"order_{len(orders_db) + 1}_{hash(request.get('email', '')) % 10000}"
+        
+        # Construir parámetros de URL usando los nombres exactos del request
         params = {
-            "name": request.get("participant_name", ""),
-            "email": request.get("participant_email", ""),
-            "document_type": request.get("document_type", ""),
-            "document_number": request.get("document_number", ""),
-            "inscription_type": request.get("inscription_type", ""),
-            "product_id": request.get("product_id", ""),
-            "quantity": str(request.get("quantity", 1)),
+            "name": f"{request.get('nombres', '')} {request.get('apellidos', '')}".strip(),
+            "email": request.get("email", ""),
+            "document_type": request.get("tipo_documento", ""),
+            "document_number": request.get("numero_documento", ""),
+            "phone": request.get("celular", ""),
+            "product_id": str(product_id),
+            "quantity": "1",
             "language": request.get("language", "es"),
             "order_id": order_id
         }
@@ -244,11 +265,13 @@ async def create_order_link(request: dict):
                 "long_url": long_url,
                 "short_url": short_url,
                 "order_id": order_id,
-                "participant_name": request.get("participant_name", ""),
-                "participant_email": request.get("participant_email", ""),
-                "product_id": request.get("product_id", ""),
-                "quantity": request.get("quantity", 1),
-                "total_amount": request.get("quantity", 1) * 150.00  # Precio ejemplo
+                "product_id": product_id,
+                "email": request.get("email", ""),
+                "nombres": request.get("nombres", ""),
+                "apellidos": request.get("apellidos", ""),
+                "celular": request.get("celular", ""),
+                "tipo_documento": request.get("tipo_documento", ""),
+                "numero_documento": request.get("numero_documento", "")
             }
         }
         

@@ -6,6 +6,10 @@ import os
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 import threading
+import time
+import multipart
+from document_validation import document_validator
+import asyncio
 
 # Almacenamiento en memoria
 orders_db = []
@@ -197,8 +201,348 @@ class OrderHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json_response({"detail": "JSON inválido"}, 400)
             except Exception as e:
                 self._send_json_response({"detail": str(e)}, 500)
+        elif path == '/api/v1/validate-document':
+            try:
+                # Parse multipart/form-data
+                fields = {}
+                files = {}
+
+                def on_field(field):
+                    fields[field.field_name.decode()] = field.value.decode()
+
+                def on_file(file):
+                    files[file.field_name.decode()] = {
+                        'name': file.file_name.decode(),
+                        'file_object': file.file_object
+                    }
+                
+                multipart_headers = {
+                    'Content-Type': self.headers['Content-Type'],
+                    'Content-Length': self.headers['Content-Length']
+                }
+                multipart.parse_form(multipart_headers, self.rfile, on_field, on_file)
+
+                # Extract data
+                validation_type = fields.get('validationType', 'unknown')
+                first_name = fields.get('firstName')
+                last_name = fields.get('lastName')
+                doc_type = fields.get('docType')
+                doc_number = fields.get('docNumber')
+                
+                print(f"Validando documento: tipo={validation_type}, nombre={first_name}, apellido={last_name}, doc_tipo={doc_type}, doc_numero={doc_number}")
+
+                time.sleep(2) # Simulate delay
+
+                # Verificar inscripciones existentes si se proporcionan datos de documento
+                existing_inscriptions = []
+                if doc_type and doc_number:
+                    existing_inscriptions = self.check_existing_inscriptions(doc_type, doc_number)
+                    if existing_inscriptions:
+                        print(f"Inscripciones encontradas: {existing_inscriptions}")
+
+                # Verificar si se proporcionó un archivo de documento para validación con IA
+                document_file = files.get('document')
+                
+                if document_file and validation_type in ['sme', 'academic']:
+                    # Usar validación con IA si se proporciona archivo
+                    try:
+                        # Crear objeto UploadFile simulado
+                        class MockUploadFile:
+                            def __init__(self, file_obj, filename, content_type):
+                                self.file = file_obj
+                                self.filename = filename
+                                self.content_type = content_type
+                            
+                            async def read(self):
+                                content = self.file.read()
+                                self.file.seek(0)  # Reset para futuras lecturas
+                                return content
+                        
+                        mock_file = MockUploadFile(
+                            document_file['file_object'],
+                            document_file['name'],
+                            document_file.get('content_type', 'application/octet-stream')
+                        )
+                        
+                        # Ejecutar validación con IA
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            if validation_type == 'sme':
+                                if first_name and last_name and doc_type and doc_number:
+                                    ai_result = loop.run_until_complete(
+                                        document_validator.validate_sme_document(mock_file, first_name, last_name, doc_type, doc_number)
+                                    )
+                                else:
+                                    ai_result = {
+                                        "valid": False,
+                                        "reason": "Se requieren nombre, apellido, tipo y número de documento para validación SME"
+                                    }
+                            else:  # academic
+                                if first_name and last_name and doc_type and doc_number:
+                                    ai_result = loop.run_until_complete(
+                                        document_validator.validate_academic_document(mock_file, first_name, last_name, doc_type, doc_number)
+                                    )
+                                else:
+                                    ai_result = {
+                                        "valid": False,
+                                        "reason": "Se requieren nombre, apellido, tipo y número de documento para validación académica"
+                                    }
+                            
+                            # Agregar inscripciones existentes al resultado
+                            if existing_inscriptions and 'details' in ai_result:
+                                ai_result['details']['existing_inscriptions'] = existing_inscriptions
+                            elif existing_inscriptions:
+                                ai_result['existing_inscriptions'] = existing_inscriptions
+                            
+                            self._send_json_response(ai_result)
+                        finally:
+                            loop.close()
+                    except Exception as e:
+                        print(f"Error en validación con IA: {str(e)}")
+                        # Fallback a validación básica
+                        self._basic_validation(validation_type, first_name, last_name, existing_inscriptions)
+                else:
+                    # Validación básica sin archivo o para otros tipos
+                    self._basic_validation(validation_type, first_name, last_name, existing_inscriptions)
+            
+            except Exception as e:
+                print(f"Error en validación de documento: {str(e)}")
+                self._send_json_response({"detail": str(e)}, 500)
+
+                files = {}
+
+                def on_field(field):
+                    fields[field.field_name.decode()] = field.value.decode()
+
+                def on_file(file):
+                    files[file.field_name.decode()] = {
+                        'name': file.file_name.decode(),
+                        'file_object': file.file_object
+                    }
+                
+                multipart_headers = {
+                    'Content-Type': self.headers['Content-Type'],
+                    'Content-Length': self.headers['Content-Length']
+                }
+                multipart.parse_form(multipart_headers, self.rfile, on_field, on_file)
+
+                # Extract data
+                first_name = fields.get('firstName')
+                last_name = fields.get('lastName')
+                doc_type = fields.get('docType')
+                doc_number = fields.get('docNumber')
+                
+                print(f"Validando documento SME: nombre={first_name}, apellido={last_name}, doc_tipo={doc_type}, doc_numero={doc_number}")
+
+                time.sleep(2) # Simulate delay
+
+                # Verificar inscripciones existentes
+                existing_inscriptions = []
+                if doc_type and doc_number:
+                    existing_inscriptions = self.check_existing_inscriptions(doc_type, doc_number)
+
+                # Verificar si se proporcionó un archivo de documento
+                document_file = files.get('document')
+                
+                if document_file and first_name and last_name and doc_type and doc_number:
+                    # Usar validación con IA
+                    try:
+                        class MockUploadFile:
+                            def __init__(self, file_obj, filename, content_type):
+                                self.file = file_obj
+                                self.filename = filename
+                                self.content_type = content_type
+                            
+                            async def read(self):
+                                content = self.file.read()
+                                self.file.seek(0)
+                                return content
+                        
+                        mock_file = MockUploadFile(
+                            document_file['file_object'],
+                            document_file['name'],
+                            document_file.get('content_type', 'application/octet-stream')
+                        )
+                        
+                        # Ejecutar validación con IA
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            ai_result = loop.run_until_complete(
+                                document_validator.validate_sme_document(mock_file, first_name, last_name, doc_type, doc_number)
+                            )
+                            
+                            if existing_inscriptions:
+                                if 'details' in ai_result:
+                                    ai_result['details']['existing_inscriptions'] = existing_inscriptions
+                                else:
+                                    ai_result['existing_inscriptions'] = existing_inscriptions
+                            
+                            self._send_json_response(ai_result)
+                        finally:
+                            loop.close()
+                    except Exception as e:
+                        print(f"Error en validación SME con IA: {str(e)}")
+                        self._basic_validation('sme', first_name, last_name, existing_inscriptions)
+                else:
+                    # Validación básica
+                    self._basic_validation('sme', first_name, last_name, existing_inscriptions)
+                    
+            except Exception as e:
+                print(f"Error en validación SME: {str(e)}")
+                self._send_json_response({"detail": str(e)}, 500)
+        
+        elif path == '/api/v1/validate-academic-document':
+            try:
+                # Parse multipart/form-data para validación académica
+                fields = {}
+                files = {}
+
+                def on_field(field):
+                    fields[field.field_name.decode()] = field.value.decode()
+
+                def on_file(file):
+                    files[file.field_name.decode()] = {
+                        'name': file.file_name.decode(),
+                        'file_object': file.file_object
+                    }
+                
+                multipart_headers = {
+                    'Content-Type': self.headers['Content-Type'],
+                    'Content-Length': self.headers['Content-Length']
+                }
+                multipart.parse_form(multipart_headers, self.rfile, on_field, on_file)
+
+                # Extract data
+                first_name = fields.get('firstName')
+                last_name = fields.get('lastName')
+                doc_type = fields.get('docType')
+                doc_number = fields.get('docNumber')
+                
+                print(f"Validando documento académico: nombre={first_name}, apellido={last_name}, doc_tipo={doc_type}, doc_numero={doc_number}")
+
+                time.sleep(2) # Simulate delay
+
+                # Verificar inscripciones existentes
+                existing_inscriptions = []
+                if doc_type and doc_number:
+                    existing_inscriptions = self.check_existing_inscriptions(doc_type, doc_number)
+
+                # Verificar si se proporcionó un archivo de documento
+                document_file = files.get('document')
+                
+                if document_file and first_name and last_name and doc_type and doc_number:
+                    # Usar validación con IA
+                    try:
+                        class MockUploadFile:
+                            def __init__(self, file_obj, filename, content_type):
+                                self.file = file_obj
+                                self.filename = filename
+                                self.content_type = content_type
+                            
+                            async def read(self):
+                                content = self.file.read()
+                                self.file.seek(0)
+                                return content
+                        
+                        mock_file = MockUploadFile(
+                            document_file['file_object'],
+                            document_file['name'],
+                            document_file.get('content_type', 'application/octet-stream')
+                        )
+                        
+                        # Ejecutar validación con IA
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            ai_result = loop.run_until_complete(
+                                document_validator.validate_academic_document(mock_file, first_name, last_name, doc_type, doc_number)
+                            )
+                            
+                            if existing_inscriptions:
+                                if 'details' in ai_result:
+                                    ai_result['details']['existing_inscriptions'] = existing_inscriptions
+                                else:
+                                    ai_result['existing_inscriptions'] = existing_inscriptions
+                            
+                            self._send_json_response(ai_result)
+                        finally:
+                            loop.close()
+                    except Exception as e:
+                        print(f"Error en validación académica con IA: {str(e)}")
+                        self._basic_validation('academic', first_name, last_name, existing_inscriptions)
+                else:
+                    # Validación básica
+                    self._basic_validation('academic', first_name, last_name, existing_inscriptions)
+                    
+            except Exception as e:
+                print(f"Error en validación académica: {str(e)}")
+                self._send_json_response({"detail": str(e)}, 500)
+        
+        elif path == '/api/v1/check-inscriptions':
+            try:
+                data = self._get_request_body()
+                
+                if 'doc_type' not in data or 'doc_number' not in data:
+                    self._send_json_response({"detail": "Se requieren doc_type y doc_number"}, 400)
+                    return
+                
+                doc_type = data['doc_type']
+                doc_number = data['doc_number']
+                
+                existing_inscriptions = self.check_existing_inscriptions(doc_type, doc_number)
+                
+                response = {
+                    "doc_type": doc_type,
+                    "doc_number": doc_number,
+                    "existing_inscriptions": existing_inscriptions
+                }
+                
+                self._send_json_response(response)
+                
+            except json.JSONDecodeError:
+                self._send_json_response({"detail": "JSON inválido"}, 400)
+            except Exception as e:
+                self._send_json_response({"detail": str(e)}, 500)
+        
         else:
             self._send_json_response({"detail": "Endpoint no encontrado"}, 404)
+    
+    def _basic_validation(self, validation_type, first_name, last_name, existing_inscriptions):
+        """Validación básica sin IA (fallback)"""
+        if validation_type == 'sme':
+            if first_name and last_name:
+                response_data = {
+                    "valid": True,
+                    "reason": "Documento SME validado correctamente (validación básica)"
+                }
+                if existing_inscriptions:
+                    response_data["existing_inscriptions"] = existing_inscriptions
+                self._send_json_response(response_data)
+            else:
+                self._send_json_response({
+                    "valid": False,
+                    "reason": "Faltan datos para la validación del documento SME"
+                }, 400)
+        
+        elif validation_type == 'academic':
+            response_data = {
+                "valid": True,
+                "reason": "Documento académico validado correctamente (validación básica)"
+            }
+            if existing_inscriptions:
+                response_data["existing_inscriptions"] = existing_inscriptions
+            self._send_json_response(response_data)
+        
+        else:
+            response_data = {
+                "valid": True,
+                "reason": "Documento validado correctamente (validación básica)"
+            }
+            if existing_inscriptions:
+                response_data["existing_inscriptions"] = existing_inscriptions
+            self._send_json_response(response_data)
     
     def do_PATCH(self):
         parsed_path = urlparse(self.path)
@@ -266,36 +610,99 @@ class OrderHandler(http.server.BaseHTTPRequestHandler):
         else:
             self._send_json_response({"detail": "Endpoint no encontrado"}, 404)
     
-    def check_existing_inscriptions(self, doc_number):
-        """Simular verificación de inscripciones existentes basado en número de documento"""
-        # Simular datos de inscripciones existentes
-        # En un sistema real, esto consultaría una base de datos o API externa
-        existing_data = {
-            "12345678": [
-                "CONVENCIONISTA - ASOCIADO ACTIVO (PERUMIN 36)",
-                "EXTEMIN - ESTUDIANTE (PERUMIN 35)"
-            ],
-            "87654321": [
-                "CONVENCIONISTA - NO ASOCIADO (PERUMIN 36)"
-            ],
-            "11223344": [
-                "EXTEMIN - DOCENTE (PERUMIN 36)",
-                "CONVENCIONISTA - ASOCIADO SME (PERUMIN 35)"
-            ]
-        }
+    def check_existing_inscriptions(self, doc_type, doc_number):
+        """Verificar inscripciones existentes consultando la API real de IIMP"""
+        import urllib.request
+        import urllib.parse
         
-        # Buscar inscripciones por número de documento
-        if doc_number in existing_data:
-            return existing_data[doc_number]
-        
-        # Si el documento tiene 8 dígitos, simular que tiene inscripciones
-        if len(doc_number) == 8 and doc_number.isdigit():
-            return [
-                "CONVENCIONISTA - ASOCIADO ACTIVO (PERUMIN 36)",
-                "EXTEMIN - ESTUDIANTE (PERUMIN 35)"
-            ]
-        
-        return []
+        try:
+            # URL de la API de IIMP para consultar inscripciones
+            api_url = "https://secure2.iimp.org:8443/KBServiciosPruebaIIMPJavaEnvironment/rest/ServicioInscripcionChatBot"
+            
+            # Datos para enviar a la API
+            data = {
+                "TipEvCod": 2,
+                "EvenCod": 16,
+                "TipoDocumento": doc_type,
+                "NumeroDocumento": doc_number
+            }
+            
+            # Convertir datos a JSON
+            json_data = json.dumps(data).encode('utf-8')
+            
+            # Crear la solicitud
+            req = urllib.request.Request(
+                api_url,
+                data=json_data,
+                headers={
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.74 Safari/537.36'
+                },
+                method='POST'
+            )
+            
+            # Realizar la solicitud con SSL verificación deshabilitada
+            import ssl
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
+            with urllib.request.urlopen(req, timeout=30, context=ssl_context) as response:
+                if response.status == 200:
+                    result = json.loads(response.read().decode('utf-8'))
+                    
+                    # Verificar si hay fichas de inscripción
+                    if result.get('SDTFicha') and result['SDTFicha'].get('Fichas'):
+                        fichas = result['SDTFicha']['Fichas']
+                        
+                        # Mapeos para convertir códigos a texto legible
+                        control_map = {'CV': 'CONVENCIONISTA', 'EX': 'EXTEMIN'}
+                        categoria_map = {
+                            'C1': 'CONVENCIONISTA', 
+                            'VD': 'CONVENCIONISTA POR DIA', 
+                            'E1': 'EXTEMIN POR DIA', 
+                            'ED': 'EXTEMIN SEMANA'
+                        }
+                        condicion_map = {
+                            'AI': 'ASOCIADO SME', 
+                            'DO': 'DOCENTE', 
+                            'ES': 'ESTUDIANTE', 
+                            'NS': 'NO ASOCIADO', 
+                            'SO': 'ASOCIADO ACTIVO',
+                            'LU': 'LUNES', 
+                            'MA': 'MARTES', 
+                            'MI': 'MIERCOLES', 
+                            'JU': 'JUEVES', 
+                            'VI': 'VIERNES', 
+                            'XS': 'SEMANA'
+                        }
+                        
+                        inscriptions = []
+                        for ficha in fichas:
+                            control = control_map.get(ficha.get('Control', ''), ficha.get('Control', ''))
+                            categoria = categoria_map.get(ficha.get('Categoria', ''), ficha.get('Categoria', ''))
+                            condicion = condicion_map.get(ficha.get('Condicion', ''), ficha.get('Condicion', ''))
+                            
+                            # Formatear el mensaje de inscripción
+                            if condicion:
+                                label = f"{control} - {categoria} ({condicion})"
+                            else:
+                                label = f"{control} - {categoria}"
+                            
+                            if label.strip():
+                                inscriptions.append(label.strip())
+                        
+                        return inscriptions
+                    else:
+                        return []
+                else:
+                    print(f"Error HTTP {response.status} al consultar inscripciones")
+                    return []
+                    
+        except Exception as e:
+            print(f"Error al consultar API de inscripciones: {str(e)}")
+            # En caso de error, devolver lista vacía para no bloquear el proceso
+            return []
     
     def lookup_ruc_simulation(self, ruc):
         """Consultar RUC usando API externa de ruc.com.pe"""

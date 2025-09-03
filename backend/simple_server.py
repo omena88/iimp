@@ -68,7 +68,7 @@ class OrderHandler(http.server.BaseHTTPRequestHandler):
         # Servir archivos estáticos del frontend
         if path == '/' or path == '/index.html':
             self._serve_static_file('../frontend/index.html', 'text/html')
-        elif path == '/checkout.html':
+        elif path == '/checkout.html' or path == '/frontend/checkout.html':
             self._serve_static_file('../frontend/checkout.html', 'text/html')
         elif path.startswith('/css/'):
             file_path = f'../frontend{path}'
@@ -155,6 +155,44 @@ class OrderHandler(http.server.BaseHTTPRequestHandler):
                     next_id += 1
                     
                     self._send_json_response(new_order, 201)
+            except json.JSONDecodeError:
+                self._send_json_response({"detail": "JSON inválido"}, 400)
+            except Exception as e:
+                self._send_json_response({"detail": str(e)}, 500)
+        elif path == '/api/v1/consultar-ruc':
+            try:
+                data = self._get_request_body()
+                
+                if 'ruc' not in data:
+                    self._send_json_response({"detail": "Campo requerido: ruc"}, 400)
+                    return
+                
+                ruc = data['ruc']
+                
+                # Validar formato de RUC (11 dígitos)
+                if not ruc or len(ruc) != 11 or not ruc.isdigit():
+                    self._send_json_response({
+                        "success": False,
+                        "detail": "RUC debe tener 11 dígitos"
+                    }, 400)
+                    return
+                
+                # Simular consulta de RUC
+                # En un sistema real, esto consultaría SUNAT o una API externa
+                ruc_data = self.lookup_ruc_simulation(ruc)
+                
+                if ruc_data:
+                    self._send_json_response({
+                        "success": True,
+                        "razonSocial": ruc_data["razonSocial"],
+                        "ruc": ruc
+                    })
+                else:
+                    self._send_json_response({
+                        "success": False,
+                        "detail": "RUC no encontrado"
+                    }, 404)
+                    
             except json.JSONDecodeError:
                 self._send_json_response({"detail": "JSON inválido"}, 400)
             except Exception as e:
@@ -258,6 +296,84 @@ class OrderHandler(http.server.BaseHTTPRequestHandler):
             ]
         
         return []
+    
+    def lookup_ruc_simulation(self, ruc):
+        """Consultar RUC usando API externa de ruc.com.pe"""
+        import urllib.request
+        import urllib.parse
+        
+        try:
+            # Configurar la solicitud a la API externa
+            url = "https://ruc.com.pe/api/v1/consultas"
+            token = "78cdfb10-f584-460b-9bb3-52c6b8073c41-2408ea68-7b93-45ad-92ec-82b43f209381"
+            
+            # Datos para enviar
+            data = {
+                "token": token,
+                "ruc": ruc
+            }
+            
+            # Convertir datos a JSON
+            json_data = json.dumps(data).encode('utf-8')
+            
+            # Crear la solicitud
+            req = urllib.request.Request(
+                url,
+                data=json_data,
+                headers={
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'IIMP-WEB/1.0'
+                },
+                method='POST'
+            )
+            
+            # Realizar la solicitud
+            with urllib.request.urlopen(req, timeout=10) as response:
+                if response.status == 200:
+                    result = json.loads(response.read().decode('utf-8'))
+                    
+                    # Verificar si la respuesta es exitosa
+                    if result.get('success') and result.get('nombre_o_razon_social'):
+                        return {
+                            "razonSocial": result['nombre_o_razon_social'],
+                            "estado": result.get('estado_del_contribuyente', 'DESCONOCIDO'),
+                            "condicion": result.get('condicion_de_domicilio', 'DESCONOCIDO')
+                        }
+                    else:
+                        print(f"RUC {ruc} no encontrado en API externa")
+                        return None
+                else:
+                    print(f"Error HTTP {response.status} al consultar RUC {ruc}")
+                    return None
+                    
+        except Exception as e:
+            print(f"Error al consultar API externa para RUC {ruc}: {str(e)}")
+            
+            # Fallback a datos simulados en caso de error
+            ruc_database = {
+                "20603588127": {
+                    "razonSocial": "INSTITUTO DE INGENIEROS DE MINAS DEL PERU",
+                    "estado": "ACTIVO",
+                    "condicion": "HABIDO"
+                },
+                "20100070970": {
+                    "razonSocial": "SUPERINTENDENCIA NACIONAL DE ADUANAS Y DE ADMINISTRACION TRIBUTARIA",
+                    "estado": "ACTIVO",
+                    "condicion": "HABIDO"
+                },
+                "20131312955": {
+                    "razonSocial": "UNIVERSIDAD NACIONAL DE INGENIERIA",
+                    "estado": "ACTIVO",
+                    "condicion": "HABIDO"
+                },
+                "20100017491": {
+                    "razonSocial": "SERVICIO DE ADMINISTRACION TRIBUTARIA DE LIMA",
+                    "estado": "ACTIVO",
+                    "condicion": "HABIDO"
+                }
+            }
+            
+            return ruc_database.get(ruc, None)
 
 if __name__ == "__main__":
     PORT = 8000

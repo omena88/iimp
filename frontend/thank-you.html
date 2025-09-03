@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PERUMIN 37 - Confirmación de Inscripción</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'perumin': '#004F59',
+                        'perumin-light': '#006B7A',
+                        'perumin-dark': '#003C45'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen" x-data="thankYouApp()">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <img src="assets/LOGO_PERUMIN_37.png" alt="PERUMIN 37" class="h-10">
+                </div>
+                <div class="flex space-x-2">
+                    <button @click="setLanguage('es')" :class="language === 'es' ? 'bg-perumin text-white' : 'bg-gray-200 text-gray-700'" class="px-3 py-1 rounded text-sm font-medium transition-colors">
+                        🇪🇸 ES
+                    </button>
+                    <button @click="setLanguage('en')" :class="language === 'en' ? 'bg-perumin text-white' : 'bg-gray-200 text-gray-700'" class="px-3 py-1 rounded text-sm font-medium transition-colors">
+                        🇺🇸 EN
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <!-- Success Header -->
+            <div class="bg-green-50 border-b border-green-200 px-6 py-8 text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                    <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900 mb-2" x-text="t('confirmationTitle')">¡Inscripción Confirmada!</h1>
+                <p class="text-gray-600" x-text="t('confirmationSubtitle')">Tu inscripción a PERUMIN 37 ha sido procesada exitosamente.</p>
+            </div>
+
+            <!-- Order Details -->
+            <div class="px-6 py-6">
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4" x-text="t('orderDetails')">Detalles de la Orden</h2>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-sm text-gray-500" x-text="t('orderNumber')">Número de Orden:</span>
+                                <p class="font-medium" x-text="orderData.id || 'N/A'">N/A</p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-500" x-text="t('orderDate')">Fecha:</span>
+                                <p class="font-medium" x-text="new Date().toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US')"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-500" x-text="t('inscriptionType')">Tipo de Inscripción:</span>
+                                <p class="font-medium capitalize" x-text="orderData.inscription_type || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-500" x-text="t('category')">Categoría:</span>
+                                <p class="font-medium" x-text="orderData.category || 'N/A'"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Participant Information -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="t('participantInfo')">Información del Participante</h3>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-sm text-gray-500" x-text="t('fullName')">Nombre Completo:</span>
+                                <p class="font-medium" x-text="(orderData.nombres || '') + ' ' + (orderData.apellidos || '')"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-500" x-text="t('documentNumber')">Número de Documento:</span>
+                                <p class="font-medium" x-text="orderData.numero_documento || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-500" x-text="t('email')">Email:</span>
+                                <p class="font-medium" x-text="orderData.email || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm text-gray-500" x-text="t('phone')">Teléfono:</span>
+                                <p class="font-medium" x-text="orderData.celular || 'N/A'"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Summary -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="t('paymentSummary')">Resumen de Pago</h3>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-center text-lg font-semibold">
+                            <span x-text="t('total')">Total:</span>
+                            <span class="text-perumin" x-text="formatCurrency(orderData.total_amount || 0)"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Steps -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="t('nextSteps')">Próximos Pasos</h3>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <ul class="space-y-2 text-sm text-blue-800">
+                            <li class="flex items-start">
+                                <span class="flex-shrink-0 h-1.5 w-1.5 bg-blue-600 rounded-full mt-2 mr-3"></span>
+                                <span x-text="t('step1')">Recibirás un correo de confirmación con los detalles de tu inscripción.</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="flex-shrink-0 h-1.5 w-1.5 bg-blue-600 rounded-full mt-2 mr-3"></span>
+                                <span x-text="t('step2')">Te contactaremos para coordinar el proceso de pago.</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="flex-shrink-0 h-1.5 w-1.5 bg-blue-600 rounded-full mt-2 mr-3"></span>
+                                <span x-text="t('step3')">Una vez confirmado el pago, recibirás tu credencial de acceso.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button @click="downloadPDF()" class="bg-perumin hover:bg-perumin-dark text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span x-text="t('downloadPDF')">Descargar PDF</span>
+                    </button>
+                    <a href="index.html" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center">
+                        <span x-text="t('backToHome')">Volver al Inicio</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function thankYouApp() {
+            return {
+                language: 'es',
+                orderData: {},
+                
+                translations: {
+                    es: {
+                        confirmationTitle: '¡Inscripción Confirmada!',
+                        confirmationSubtitle: 'Tu inscripción a PERUMIN 37 ha sido procesada exitosamente.',
+                        orderDetails: 'Detalles de la Orden',
+                        orderNumber: 'Número de Orden:',
+                        orderDate: 'Fecha:',
+                        inscriptionType: 'Tipo de Inscripción:',
+                        category: 'Categoría:',
+                        participantInfo: 'Información del Participante',
+                        fullName: 'Nombre Completo:',
+                        documentNumber: 'Número de Documento:',
+                        email: 'Email:',
+                        phone: 'Teléfono:',
+                        paymentSummary: 'Resumen de Pago',
+                        total: 'Total:',
+                        nextSteps: 'Próximos Pasos',
+                        step1: 'Recibirás un correo de confirmación con los detalles de tu inscripción.',
+                        step2: 'Te contactaremos para coordinar el proceso de pago.',
+                        step3: 'Una vez confirmado el pago, recibirás tu credencial de acceso.',
+                        downloadPDF: 'Descargar PDF',
+                        backToHome: 'Volver al Inicio'
+                    },
+                    en: {
+                        confirmationTitle: 'Registration Confirmed!',
+                        confirmationSubtitle: 'Your PERUMIN 37 registration has been processed successfully.',
+                        orderDetails: 'Order Details',
+                        orderNumber: 'Order Number:',
+                        orderDate: 'Date:',
+                        inscriptionType: 'Registration Type:',
+                        category: 'Category:',
+                        participantInfo: 'Participant Information',
+                        fullName: 'Full Name:',
+                        documentNumber: 'Document Number:',
+                        email: 'Email:',
+                        phone: 'Phone:',
+                        paymentSummary: 'Payment Summary',
+                        total: 'Total:',
+                        nextSteps: 'Next Steps',
+                        step1: 'You will receive a confirmation email with your registration details.',
+                        step2: 'We will contact you to coordinate the payment process.',
+                        step3: 'Once payment is confirmed, you will receive your access credentials.',
+                        downloadPDF: 'Download PDF',
+                        backToHome: 'Back to Home'
+                    }
+                },
+
+                init() {
+                    // Get order data from URL parameters or localStorage
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const orderDataParam = urlParams.get('orderData');
+                    
+                    if (orderDataParam) {
+                        try {
+                            this.orderData = JSON.parse(decodeURIComponent(orderDataParam));
+                        } catch (e) {
+                            console.error('Error parsing order data:', e);
+                        }
+                    } else {
+                        // Try to get from localStorage as fallback
+                        const storedOrderData = localStorage.getItem('lastOrderData');
+                        if (storedOrderData) {
+                            try {
+                                this.orderData = JSON.parse(storedOrderData);
+                            } catch (e) {
+                                console.error('Error parsing stored order data:', e);
+                            }
+                        }
+                    }
+                },
+
+                setLanguage(lang) {
+                    this.language = lang;
+                },
+
+                t(key) {
+                    return this.translations[this.language][key] || key;
+                },
+
+                formatCurrency(amount) {
+                    return new Intl.NumberFormat(this.language === 'es' ? 'es-PE' : 'en-US', {
+                        style: 'currency',
+                        currency: 'USD'
+                    }).format(amount);
+                },
+
+                downloadPDF() {
+                    // Simple implementation - in a real app, you'd generate a proper PDF
+                    window.print();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

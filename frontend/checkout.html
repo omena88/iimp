@@ -42,7 +42,7 @@
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Formulario Principal -->
             <div class="lg:col-span-2">
@@ -135,6 +135,61 @@
                     </div>
                 </div>
 
+                <!-- Sección de Facturación -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200" x-show="formData.docType">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-perumin" x-text="t('billingSection')">Información de Facturación</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('receiptType')">Tipo de Comprobante</label>
+                                <select x-model="formData.receiptType" @change="updateBillingDocOptions()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin">
+                                    <option value="03" x-text="t('receiptBoleta')">Boleta</option>
+                                    <option value="01" x-text="t('receiptFactura')" x-show="formData.docType === 'DNI'">Factura</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('billingDocType')">Tipo de Documento de Facturación</label>
+                                <select x-model="formData.billingDocType" @change="updateBillingFields()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin">
+                                    <option value="" x-text="t('selectBillingDocType')">Seleccionar...</option>
+                                    <option value="1" x-text="t('billingDocDNI')" x-show="formData.receiptType === '03'">DNI (Peruano)</option>
+                                    <option value="6" x-text="t('billingDocRUC')">RUC</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Campos de RUC y Razón Social -->
+                        <div x-show="formData.billingDocType === '6'" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('rucNumber')">Número de RUC</label>
+                                <input type="text" x-model="formData.rucNumber" @input="validateRUC()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterRUC')" maxlength="11">
+                                <div x-show="rucValidationMessage" class="mt-1 text-sm" :class="rucValidationStatus === 'success' ? 'text-green-600' : 'text-red-600'" x-text="rucValidationMessage"></div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('businessName')">Razón Social</label>
+                                <input type="text" x-model="formData.businessName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterBusinessName')" :readonly="rucValidationStatus === 'success'">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('company')">Empresa</label>
+                                <input type="text" x-model="formData.billingCompany" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterBillingCompany')">
+                            </div>
+                        </div>
+
+                        <!-- Campo de número de documento para DNI -->
+                        <div x-show="formData.billingDocType === '1'" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('billingDocNumber')">Número de Documento</label>
+                                <input type="text" x-model="formData.billingDocNumber" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterBillingDocNumber')" readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('company')">Empresa</label>
+                                <input type="text" x-model="formData.billingCompany" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterBillingCompany')">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
 
             </div>
 
@@ -214,7 +269,22 @@
                         enterPhone: 'Ingresa teléfono',
                         enterCompany: 'Ingresa empresa (opcional)',
                         documentType: 'Tipo de Documento',
-                        documentNumber: 'Número de Documento'
+                        documentNumber: 'Número de Documento',
+                        billingSection: 'Información de Facturación',
+                        receiptType: 'Tipo de Comprobante',
+                        receiptBoleta: 'Boleta',
+                        receiptFactura: 'Factura',
+                        billingDocType: 'Tipo de Documento de Facturación',
+                        selectBillingDocType: 'Seleccionar tipo de documento',
+                        billingDocDNI: 'DNI (Peruano)',
+                        billingDocRUC: 'RUC',
+                        rucNumber: 'Número de RUC',
+                        enterRUC: 'Ingresa número de RUC',
+                        businessName: 'Razón Social',
+                        enterBusinessName: 'Razón Social (se autocompletará)',
+                        billingDocNumber: 'Número de Documento',
+                        enterBillingDocNumber: 'Número de documento',
+                        enterBillingCompany: 'Ingresa empresa para facturación'
                     },
                     en: {
                         personalData: 'Personal Data',
@@ -243,7 +313,22 @@
                         enterPhone: 'Enter phone',
                         enterCompany: 'Enter company (optional)',
                         documentType: 'Document Type',
-                        documentNumber: 'Document Number'
+                        documentNumber: 'Document Number',
+                        billingSection: 'Billing Information',
+                        receiptType: 'Receipt Type',
+                        receiptBoleta: 'Receipt',
+                        receiptFactura: 'Invoice',
+                        billingDocType: 'Billing Document Type',
+                        selectBillingDocType: 'Select document type',
+                        billingDocDNI: 'DNI (Peruvian)',
+                        billingDocRUC: 'RUC',
+                        rucNumber: 'RUC Number',
+                        enterRUC: 'Enter RUC number',
+                        businessName: 'Business Name',
+                        enterBusinessName: 'Business Name (auto-filled)',
+                        billingDocNumber: 'Document Number',
+                        enterBillingDocNumber: 'Document number',
+                        enterBillingCompany: 'Enter company for billing'
                     }
                 },
                 formData: {
@@ -257,10 +342,21 @@
                     inscriptionType: '',
                     category: '',
                     currency: 'USD',
-                    isLoading: false
+                    isLoading: false,
+                    // Campos de facturación
+                    receiptType: '03', // Boleta por defecto
+                    billingDocType: '',
+                    rucNumber: '',
+                    businessName: '',
+                    billingCompany: '',
+                    billingDocNumber: ''
                 },
                 existingInscriptions: [],
                 isLoading: false,
+                // Variables para validación de RUC
+                rucValidationMessage: '',
+                rucValidationStatus: '', // 'success', 'error', ''
+                rucTimeout: null,
                 
                 // Inicialización - poblar campos desde URL
                 init() {
@@ -396,6 +492,99 @@
                     } catch (error) {
                         console.error('Error checking inscriptions:', error);
                         this.existingInscriptions = [];
+                    }
+                },
+                
+                // Funciones para manejar la lógica de facturación
+                updateBillingDocOptions() {
+                    // Resetear campos cuando cambia el tipo de comprobante
+                    this.formData.billingDocType = '';
+                    this.formData.rucNumber = '';
+                    this.formData.businessName = '';
+                    this.formData.billingDocNumber = '';
+                    this.rucValidationMessage = '';
+                    this.rucValidationStatus = '';
+                    
+                    // Si es factura, solo permitir RUC
+                    if (this.formData.receiptType === '01') {
+                        this.formData.billingDocType = '6';
+                        this.updateBillingFields();
+                    }
+                },
+                
+                updateBillingFields() {
+                    // Limpiar campos cuando cambia el tipo de documento de facturación
+                    this.formData.rucNumber = '';
+                    this.formData.businessName = '';
+                    this.formData.billingDocNumber = '';
+                    this.rucValidationMessage = '';
+                    this.rucValidationStatus = '';
+                    
+                    // Si es DNI, usar el número de documento principal
+                    if (this.formData.billingDocType === '1') {
+                        this.formData.billingDocNumber = this.formData.docNumber;
+                    }
+                },
+                
+                validateRUC() {
+                    const ruc = this.formData.rucNumber.trim();
+                    
+                    // Limpiar timeout anterior
+                    if (this.rucTimeout) {
+                        clearTimeout(this.rucTimeout);
+                    }
+                    
+                    // Resetear validación
+                    this.rucValidationMessage = '';
+                    this.rucValidationStatus = '';
+                    this.formData.businessName = '';
+                    
+                    // Validar formato de RUC (11 dígitos)
+                    if (!/^\d{11}$/.test(ruc)) {
+                        if (ruc.length > 0) {
+                            this.rucValidationMessage = this.language === 'es' ? 'RUC debe tener 11 dígitos' : 'RUC must have 11 digits';
+                            this.rucValidationStatus = 'error';
+                        }
+                        return;
+                    }
+                    
+                    // Consultar RUC después de 1 segundo
+                    this.rucTimeout = setTimeout(() => {
+                        this.lookupRUC(ruc);
+                    }, 1000);
+                },
+                
+                async lookupRUC(ruc) {
+                    try {
+                        this.rucValidationMessage = this.language === 'es' ? 'Consultando RUC...' : 'Looking up RUC...';
+                        this.rucValidationStatus = '';
+                        
+                        const response = await fetch('/api/v1/consultar-ruc', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ ruc: ruc })
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.success && result.razonSocial) {
+                                this.formData.businessName = result.razonSocial;
+                                this.rucValidationMessage = this.language === 'es' ? 'RUC válido' : 'Valid RUC';
+                                this.rucValidationStatus = 'success';
+                            } else {
+                                this.rucValidationMessage = this.language === 'es' ? 'RUC no encontrado' : 'RUC not found';
+                                this.rucValidationStatus = 'error';
+                            }
+                        } else {
+                            this.rucValidationMessage = this.language === 'es' ? 'Error al consultar RUC' : 'Error looking up RUC';
+                            this.rucValidationStatus = 'error';
+                        }
+                    } catch (error) {
+                        console.error('Error looking up RUC:', error);
+                        this.rucValidationMessage = this.language === 'es' ? 'Error al consultar RUC' : 'Error looking up RUC';
+                        this.rucValidationStatus = 'error';
                     }
                 },
                 
@@ -537,10 +726,20 @@
                         
                         if (response.ok) {
                             const result = await response.json();
-                            const successMessage = this.language === 'es' ? '¡Inscripción enviada exitosamente!' : 'Inscription sent successfully!';
-                            alert(`${successMessage} ID de orden: ${result.id}`);
-                            // Aquí se redirigiría a una página de confirmación
-                            window.location.href = 'index.html';
+                            
+                            // Preparar datos completos para la página de agradecimiento
+                            const completeOrderData = {
+                                ...orderData,
+                                id: result.id,
+                                created_at: new Date().toISOString()
+                            };
+                            
+                            // Guardar en localStorage como respaldo
+                            localStorage.setItem('lastOrderData', JSON.stringify(completeOrderData));
+                            
+                            // Redirigir a página de agradecimiento con datos
+                            const orderDataParam = encodeURIComponent(JSON.stringify(completeOrderData));
+                            window.location.href = `thank-you.html?orderData=${orderDataParam}`;
                         } else {
                             const error = await response.json();
                             const errorMessage = this.language === 'es' ? 'Error al procesar la inscripción' : 'Error processing inscription';

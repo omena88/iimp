@@ -1137,12 +1137,16 @@
                 },
                 
                 async validateDocument() {
+                    console.log('Iniciando validación documental...');
+                    
                     if (!this.uploadedFile) {
+                        console.error('Error: No se ha seleccionado archivo');
                         this.showError('Debe seleccionar un archivo.');
                         return;
                     }
                     
                     if (!this.formData.firstName || !this.formData.lastName) {
+                        console.error('Error: Campos de nombre incompletos');
                         this.showError('Debe completar los campos de nombre y apellido.');
                         return;
                     }
@@ -1160,14 +1164,34 @@
                             formData.append('academicType', this.academicType);
                         }
                         
+                        console.log('Datos enviados al backend:', {
+                            fileName: this.uploadedFile.name,
+                            fileType: this.uploadedFile.type,
+                            fileSize: this.uploadedFile.size,
+                            firstName: this.formData.firstName,
+                            lastName: this.formData.lastName,
+                            validationType: this.documentValidationType,
+                            academicType: this.academicType
+                        });
+                        
+                        console.log('Realizando petición POST a /api/v1/validate-document');
                         const response = await fetch('/api/v1/validate-document', {
                             method: 'POST',
                             body: formData
                         });
                         
+                        console.log('Respuesta recibida:', response.status, response.statusText);
+                        
+                        if (!response.ok) {
+                            console.error('Error HTTP:', response.status, await response.text());
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
                         const result = await response.json();
+                        console.log('Resultado de validación:', result);
                         
                         if (result.valid) {
+                            console.log('Documento validado exitosamente');
                             this.documentValidationStatus = 'success';
                             this.documentValidationMessage = this.language === 'es' ? 'Documento validado exitosamente.' : 'Document validated successfully.';
                             this.documentValidated = true;
@@ -1176,11 +1200,13 @@
                                 this.closeDocumentValidationModal();
                             }, 2000);
                         } else {
+                            console.log('Documento rechazado:', result.reason);
                             this.documentValidationStatus = 'error';
                             this.documentValidationMessage = result.reason || (this.language === 'es' ? 'Error en la validación del documento.' : 'Document validation error.');
                         }
                     } catch (error) {
-                        console.error('Error validating document:', error);
+                        console.error('Error en validación documental:', error);
+                        console.error('Stack trace:', error.stack);
                         this.documentValidationStatus = 'error';
                         this.documentValidationMessage = this.language === 'es' ? 'Error de conexión. Intente nuevamente.' : 'Connection error. Please try again.';
                     }
@@ -1211,57 +1237,105 @@
         }
     </script>
 
-    <!-- Modal de Validación Documental -->
-    <div x-show="showDocumentValidationModal" class="modal-overlay" @click="closeDocumentValidationModal">
-        <div class="modal-content" @click.stop>
-            <div class="modal-header">
-                <h3 x-show="documentValidationType === 'academic'">
-                    <span x-text="language === 'es' ? 'Validación de Documento Académico' : 'Academic Document Validation'"></span>
-                    <span x-show="academicType === 'teacher'" x-text="'(' + (language === 'es' ? 'Docente' : 'Teacher') + ')'"></span>
-                    <span x-show="academicType === 'student'" x-text="'(' + (language === 'es' ? 'Estudiante' : 'Student') + ')'"></span>
+    <!-- Modal de Validación Documental con Tailwind -->
+    <div x-show="showDocumentValidationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300" @click="closeDocumentValidationModal">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto" @click.stop>
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-perumin">
+                    <span x-show="documentValidationType === 'academic'" x-text="language === 'es' ? 'Validación de Documento Académico' : 'Academic Document Validation'"></span>
+                    <span x-show="academicType === 'teacher'" x-text="' (' + (language === 'es' ? 'Docente' : 'Teacher') + ')'"></span>
+                    <span x-show="academicType === 'student'" x-text="' (' + (language === 'es' ? 'Estudiante' : 'Student') + ')'"></span>
+                    <span x-show="documentValidationType === 'sme'" x-text="language === 'es' ? 'Validación de Documento SME' : 'SME Document Validation'"></span>
                 </h3>
-                <h3 x-show="documentValidationType === 'sme'" x-text="language === 'es' ? 'Validación de Documento SME' : 'SME Document Validation'"></h3>
-                <button class="close-btn" @click="closeDocumentValidationModal">&times;</button>
+                <button @click="closeDocumentValidationModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
             </div>
             
-            <div class="modal-body">
-                <div class="validation-info">
-                    <p x-show="documentValidationType === 'academic' && academicType === 'teacher'" x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición de docente (constancia de trabajo, resolución, etc.)' : 'Please upload your document that proves your teaching status (work certificate, resolution, etc.)'"></p>
-                    <p x-show="documentValidationType === 'academic' && academicType === 'student'" x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición de estudiante (constancia de estudios, carnet universitario, etc.)' : 'Please upload your document that proves your student status (study certificate, university ID, etc.)'"></p>
-                    <p x-show="documentValidationType === 'sme'" x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición de SME (pequeña y mediana empresa)' : 'Please upload your document that proves your SME (small and medium enterprise) status'"></p>
+            <!-- Body -->
+            <div class="p-6">
+                <!-- Información de validación -->
+                <div class="mb-6">
+                    <p class="text-gray-600 text-sm leading-relaxed" 
+                       x-show="documentValidationType === 'academic' && academicType === 'teacher'" 
+                       x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición de docente (constancia de trabajo, resolución, etc.)' : 'Please upload your document that proves your teaching status (work certificate, resolution, etc.)'">
+                    </p>
+                    <p class="text-gray-600 text-sm leading-relaxed" 
+                       x-show="documentValidationType === 'academic' && academicType === 'student'" 
+                       x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición de estudiante (constancia de estudios, carnet universitario, etc.)' : 'Please upload your document that proves your student status (study certificate, university ID, etc.)'">
+                    </p>
+                    <p class="text-gray-600 text-sm leading-relaxed" 
+                       x-show="documentValidationType === 'sme'" 
+                       x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición de SME (pequeña y mediana empresa)' : 'Please upload your document that proves your SME (small and medium enterprise) status'">
+                    </p>
                 </div>
                 
-                <div class="file-upload-section">
-                    <label class="file-upload-label">
-                        <input type="file" @change="handleFileUpload" accept=".jpg,.jpeg,.png,.pdf" style="display: none;">
-                        <div class="file-upload-area">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <span x-show="!uploadedFile" x-text="language === 'es' ? 'Haga clic para seleccionar archivo' : 'Click to select file'"></span>
-                            <span x-show="uploadedFile" class="file-selected" x-text="uploadedFile ? uploadedFile.name : ''"></span>
-                            <small x-text="language === 'es' ? 'Formatos: JPG, PNG, PDF (máx. 5MB)' : 'Formats: JPG, PNG, PDF (max. 5MB)'"></small>
+                <!-- Upload de archivo -->
+                <div class="mb-6">
+                    <label class="block cursor-pointer">
+                        <input type="file" @change="handleFileUpload" accept=".jpg,.jpeg,.png,.pdf" class="hidden">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-perumin hover:bg-gray-50 transition-all duration-200">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <span class="block text-sm font-medium text-gray-600 mb-1" 
+                                  x-show="!uploadedFile" 
+                                  x-text="language === 'es' ? 'Haga clic para seleccionar archivo' : 'Click to select file'">
+                            </span>
+                            <span class="block text-sm font-semibold text-perumin mb-1" 
+                                  x-show="uploadedFile" 
+                                  x-text="uploadedFile ? uploadedFile.name : ''">
+                            </span>
+                            <small class="text-xs text-gray-500" 
+                                   x-text="language === 'es' ? 'Formatos: JPG, PNG, PDF (máx. 5MB)' : 'Formats: JPG, PNG, PDF (max. 5MB)'">
+                            </small>
                         </div>
                     </label>
                 </div>
                 
-                <div x-show="documentValidationStatus" class="validation-status">
-                    <div x-show="documentValidationStatus === 'validating'" class="status-validating">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span x-text="documentValidationMessage"></span>
+                <!-- Estado de validación -->
+                <div x-show="documentValidationStatus">
+                    <div x-show="documentValidationStatus === 'validating'" 
+                         class="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <svg class="w-5 h-5 text-yellow-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span class="text-sm text-yellow-800" x-text="documentValidationMessage"></span>
                     </div>
-                    <div x-show="documentValidationStatus === 'success'" class="status-success">
-                        <i class="fas fa-check-circle"></i>
-                        <span x-text="documentValidationMessage"></span>
+                    
+                    <div x-show="documentValidationStatus === 'success'" 
+                         class="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-sm text-green-800" x-text="documentValidationMessage"></span>
                     </div>
-                    <div x-show="documentValidationStatus === 'error'" class="status-error">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span x-text="documentValidationMessage"></span>
+                    
+                    <div x-show="documentValidationStatus === 'error'" 
+                         class="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span class="text-sm text-red-800" x-text="documentValidationMessage"></span>
                     </div>
                 </div>
             </div>
             
-            <div class="modal-footer">
-                <button class="btn btn-secondary" @click="closeDocumentValidationModal" x-text="language === 'es' ? 'Cancelar' : 'Cancel'"></button>
-                <button class="btn btn-primary" @click="validateDocument" :disabled="!uploadedFile || documentValidationStatus === 'validating'" x-text="language === 'es' ? 'Validar Documento' : 'Validate Document'"></button>
+            <!-- Footer -->
+            <div class="flex gap-3 p-6 border-t border-gray-200">
+                <button @click="closeDocumentValidationModal" 
+                        class="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                        x-text="language === 'es' ? 'Cancelar' : 'Cancel'">
+                </button>
+                <button @click="validateDocument" 
+                        :disabled="!uploadedFile || documentValidationStatus === 'validating'"
+                        :class="!uploadedFile || documentValidationStatus === 'validating' ? 'opacity-50 cursor-not-allowed' : ''"
+                        class="flex-1 px-4 py-2 bg-perumin text-white hover:bg-perumin-dark rounded-lg font-medium transition-colors"
+                        x-text="language === 'es' ? 'Validar Documento' : 'Validate Document'">
+                </button>
             </div>
         </div>
     </div>

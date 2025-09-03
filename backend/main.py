@@ -11,6 +11,7 @@ import re
 import string
 import random
 import asyncio
+import traceback
 from fastapi.responses import RedirectResponse
 
 app = FastAPI(
@@ -361,15 +362,29 @@ async def validate_document(
 ):
     """Validar documento usando Gemini AI"""
     try:
+        print(f"=== INICIO VALIDACIÓN DOCUMENTAL ===")
+        print(f"Archivo recibido: {file.filename}")
+        print(f"Tipo de archivo: {file.content_type}")
+        print(f"Nombre: {firstName} {lastName}")
+        print(f"Tipo de validación: {validationType}")
+        print(f"Tipo académico: {academicType}")
+        
         # Validar tipo de archivo
         allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
         if file.content_type not in allowed_types:
+            print(f"ERROR: Tipo de archivo no permitido: {file.content_type}")
             raise HTTPException(status_code=400, detail="Tipo de archivo no permitido")
         
         # Validar tamaño (máximo 5MB)
         file_content = await file.read()
-        if len(file_content) > 5 * 1024 * 1024:
+        file_size = len(file_content)
+        print(f"Tamaño del archivo: {file_size} bytes")
+        
+        if file_size > 5 * 1024 * 1024:
+            print(f"ERROR: Archivo demasiado grande: {file_size} bytes")
             raise HTTPException(status_code=400, detail="El archivo es demasiado grande")
+        
+        print("Archivo validado correctamente, procediendo con Gemini...")
         
         # Simular validación con Gemini (aquí iría la integración real)
         # Por ahora, implementamos una validación simulada
@@ -381,11 +396,17 @@ async def validate_document(
             academicType
         )
         
+        print(f"Resultado de validación: {validation_result}")
+        print("=== FIN VALIDACIÓN DOCUMENTAL ===")
+        
         return validation_result
         
     except HTTPException:
+        print(f"ERROR HTTP: {str(e)}")
         raise
     except Exception as e:
+        print(f"ERROR GENERAL: {str(e)}")
+        print(f"Stack trace: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error en validación: {str(e)}")
 
 async def simulate_gemini_validation(

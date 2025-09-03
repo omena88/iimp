@@ -284,13 +284,8 @@
                     
                     if (urlParams.get('document_type')) {
                         const docTypeCode = urlParams.get('document_type');
-                        // Mapear códigos numéricos a tipos de documento
-                        const docTypeMapping = {
-                            '1': 'DNI',
-                            '4': 'CE', 
-                            '7': 'PASAPORTE'
-                        };
-                        this.formData.docType = docTypeMapping[docTypeCode] || docTypeCode;
+                        // Usar directamente el valor del parámetro document_type
+                        this.formData.docType = docTypeCode;
                     }
                     
                     if (urlParams.get('document_number')) {

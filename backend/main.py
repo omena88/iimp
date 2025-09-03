@@ -197,7 +197,7 @@ async def create_order_link(request: dict):
         query_string = urllib.parse.urlencode(params)
         
         # Crear URLs
-        base_url = "http://localhost:8000"
+        base_url = "https://apis-iimp-web.di8b44.easypanel.host"
         long_url = f"{base_url}/checkout.html?{query_string}"
         
         # Generar shortlink simple
@@ -205,9 +205,18 @@ async def create_order_link(request: dict):
         short_url = f"{base_url}/c/{short_code}"
         
         return {
-            "long_url": long_url,
-            "short_url": short_url,
-            "order_id": order_id
+            "success": True,
+            "message": "Link de pago generado exitosamente",
+            "data": {
+                "long_url": long_url,
+                "short_url": short_url,
+                "order_id": order_id,
+                "participant_name": request.get("participant_name", ""),
+                "participant_email": request.get("participant_email", ""),
+                "product_id": request.get("product_id", ""),
+                "quantity": request.get("quantity", 1),
+                "total_amount": request.get("quantity", 1) * 150.00  # Precio ejemplo
+            }
         }
         
     except Exception as e:

@@ -287,6 +287,34 @@
                     </div>
                 </div>
 
+                <!-- Sección de Documento Validado -->
+                <div x-show="documentValidated" class="bg-green-50 border border-green-200 rounded-xl shadow-sm mb-6">
+                    <div class="px-6 py-4 border-b border-green-200">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-green-800" x-text="language === 'es' ? 'Documento Validado Exitosamente' : 'Document Successfully Validated'">Documento Validado Exitosamente</h3>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                 <label class="block text-sm font-medium text-green-700 mb-1" x-text="language === 'es' ? 'Tipo de Validación:' : 'Validation Type:'">Tipo de Validación:</label>
+                                 <p class="text-sm text-green-800 font-medium capitalize" x-text="validatedDocumentInfo && validatedDocumentInfo.validationType === 'academic' ? (language === 'es' ? 'Académico' : 'Academic') : (language === 'es' ? 'SME' : 'SME')"></p>
+                                 <p x-show="validatedDocumentInfo && validatedDocumentInfo.validationType === 'academic'" class="text-xs text-green-600" x-text="validatedDocumentInfo && validatedDocumentInfo.academicType === 'teacher' ? (language === 'es' ? '(Docente)' : '(Teacher)') : (language === 'es' ? '(Estudiante)' : '(Student)')"></p>
+                             </div>
+                             <div>
+                                 <label class="block text-sm font-medium text-green-700 mb-1" x-text="language === 'es' ? 'Archivo Validado:' : 'Validated File:'">Archivo Validado:</label>
+                                 <p class="text-sm text-green-800 font-medium" x-text="validatedDocumentInfo && validatedDocumentInfo.fileName ? validatedDocumentInfo.fileName : (language === 'es' ? 'Documento validado' : 'Validated document')"></p>
+                             </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-green-100 rounded-lg">
+                            <p class="text-sm text-green-700" x-text="language === 'es' ? '✓ Su documento ha sido validado correctamente. Puede continuar con el proceso de inscripción.' : '✓ Your document has been validated successfully. You can continue with the registration process.'"></p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Sección de Facturación -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200" x-show="formData.docType">
                     <div class="px-6 py-4 border-b border-gray-200">
@@ -489,6 +517,7 @@
                 documentValidationMessage: '',
                 documentValidated: false,
                 uploadedFile: null,
+                validatedDocumentInfo: null,
                 
                 // Inicialización - poblar campos desde URL
                 init() {
@@ -533,12 +562,15 @@
                         if (mappedValue) {
                             this.formData.docType = mappedValue;
                             console.log('Asignado:', this.formData.docType);
-                            // Verificar después de un momento si el select se actualizó
-                            setTimeout(() => {
-                                console.log('Verificación después de timeout - docType:', this.formData.docType);
+                            // Forzar actualización del DOM
+                            this.$nextTick(() => {
                                 const selectElement = document.querySelector('select[x-model="formData.docType"]');
-                                console.log('Valor del select element:', selectElement ? selectElement.value : 'No encontrado');
-                            }, 100);
+                                if (selectElement) {
+                                    selectElement.value = this.formData.docType;
+                                    selectElement.dispatchEvent(new Event('change'));
+                                }
+                                console.log('Verificación después de nextTick - docType:', this.formData.docType);
+                            });
                         } else {
                             console.log('No se encontró mapeo para código:', docTypeCode);
                             this.formData.docType = docTypeCode;
@@ -1111,7 +1143,10 @@
                 
                 closeDocumentValidationModal() {
                     this.showDocumentValidationModal = false;
-                    this.uploadedFile = null;
+                    // Solo limpiar si no se validó exitosamente
+                    if (!this.documentValidated) {
+                        this.uploadedFile = null;
+                    }
                     this.documentValidationStatus = '';
                     this.documentValidationMessage = '';
                 },
@@ -1213,6 +1248,14 @@
                             this.documentValidationStatus = 'success';
                             this.documentValidationMessage = this.language === 'es' ? 'Documento validado exitosamente.' : 'Document validated successfully.';
                             this.documentValidated = true;
+                            
+                            // Guardar información del documento validado
+                            this.validatedDocumentInfo = {
+                                fileName: this.uploadedFile ? this.uploadedFile.name : '',
+                                validationType: this.documentValidationType,
+                                academicType: this.academicType,
+                                validationDate: new Date().toISOString()
+                            };
                             
                             setTimeout(() => {
                                 this.closeDocumentValidationModal();

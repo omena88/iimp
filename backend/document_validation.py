@@ -60,67 +60,82 @@ class DocumentValidator:
             raise HTTPException(status_code=400, detail=f"Error al procesar imagen: {str(e)}")
     
     async def validate_sme_document(self, file: UploadFile, first_name: str, last_name: str) -> Dict[str, Any]:
-        """Valida documento SME usando IA"""
+        """Valida documento SME usando IA con criterios estrictos"""
         if not self.validate_file_type(file):
             return {
                 "valid": False,
-                "error": "Tipo de archivo no válido. Solo se permiten PDF, JPG y PNG."
+                "reason": "Tipo de archivo no válido. Solo se permiten PDF, JPG y PNG.",
+                "confidence": 0
             }
         
         # Verificar si Gemini AI está configurado
         if GEMINI_API_KEY == 'YOUR_GEMINI_API_KEY_HERE':
             return {
-                "valid": True,  # Validación básica sin IA
-                "validation_type": "SME",
-                "document_name": file.filename,
-                "result": {
-                    "valid": True,
-                    "confidence": 50,
-                    "overall_assessment": "Validación básica completada (IA no configurada)",
-                    "criteria_met": [],
-                    "recommendations": ["Configure GEMINI_API_KEY para validación avanzada con IA"]
-                }
+                "valid": False,
+                "reason": "Servicio de validación no disponible. Configure GEMINI_API_KEY.",
+                "confidence": 0
             }
         
         try:
             file_content = await file.read()
             
-            # Criterios de validación SME
-            sme_criteria = [
-                "El documento debe ser oficial y estar emitido por una institución reconocida",
-                f"El nombre en el documento debe coincidir con: {first_name} {last_name}",
-                "El documento debe estar vigente y no vencido",
-                "El documento debe ser legible y de buena calidad",
-                "El documento debe ser auténtico y no alterado",
-                "Debe ser un documento que certifique membresía o afiliación SME (Pequeña y Mediana Empresa)"
-            ]
+            # Prompt estricto basado en la versión PHP estable
+            prompt = f"""Analiza este documento PDF o imagen y verifica si es un certificado válido de membresía SME (Sociedad Minera, Metalúrgica y de Explotación). 
+    
+CRITERIOS DE VALIDACIÓN ESTRICTOS:
+1. El documento DEBE ser un certificado oficial de SME (Sociedad Minera, Metalúrgica y de Explotación)
+2. DEBE contener el nombre completo del miembro que coincida con los datos proporcionados
+3. DEBE estar vigente (no expirado)
+4. DEBE ser legible y auténtico (no una copia falsificada)
+5. DEBE ser un documento oficial, no una captura de pantalla o imagen informal
+
+DATOS DEL USUARIO A VERIFICAR:
+- Nombre: {first_name}
+- Apellido: {last_name}
+
+ANÁLISIS REQUERIDO:
+- Identifica el tipo de documento (certificado, carnet, credencial, etc.)
+- Extrae el nombre completo que aparece en el documento
+- Verifica si es un documento oficial de SME
+- Comprueba si está vigente
+- Evalúa la legibilidad y autenticidad
+
+Responde ÚNICAMENTE con un JSON válido (sin markdown, sin backticks, sin formato adicional):
+{{
+    "valid": true/false,
+    "reason": "explicación detallada de por qué es válido o inválido",
+    "confidence": 0-100,
+    "document_type": "tipo de documento identificado",
+    "member_name": "nombre completo encontrado en el documento",
+    "analysis": {{
+        "is_official_sme": true/false,
+        "name_matches": true/false,
+        "is_current": true/false,
+        "is_legible": true/false,
+        "is_authentic": true/false
+    }}
+}}
+
+IMPORTANTE: 
+- NO uses markdown, NO uses backticks, NO uses formato adicional
+- Responde SOLO el JSON puro
+- Si el documento no es un certificado oficial de SME, marca como inválido independientemente de otros factores."""
             
-            prompt = f"""
-            Analiza este documento para validar si cumple con los criterios de validación SME.
-            
-            Criterios a evaluar:
-            {chr(10).join([f"- {criterio}" for criterio in sme_criteria])}
-            
-            Responde en formato JSON con la siguiente estructura:
-            {{
-                "valid": true/false,
-                "confidence": 0-100,
-                "criteria_met": [
-                    {{
-                        "criterion": "descripción del criterio",
-                        "met": true/false,
-                        "explanation": "explicación detallada"
-                    }}
-                ],
-                "overall_assessment": "evaluación general del documento",
-                "recommendations": ["lista de recomendaciones si aplica"]
-            }}
-            """
+            # Configurar generación con parámetros estrictos
+            generation_config = {
+                'temperature': 0.1,
+                'top_k': 1,
+                'top_p': 1,
+                'max_output_tokens': 1024
+            }
             
             if file.content_type == 'application/pdf':
                 # Procesar PDF
                 text_content = self.extract_text_from_pdf(file_content)
-                response = self.model.generate_content([prompt, f"Contenido del documento: {text_content}"])
+                response = self.model.generate_content(
+                    [prompt, f"Contenido del documento: {text_content}"],
+                    generation_config=generation_config
+                )
             else:
                 # Procesar imagen
                 img_base64 = self.process_image(file_content)
@@ -128,10 +143,13 @@ class DocumentValidator:
                     "mime_type": "image/jpeg",
                     "data": img_base64
                 }
-                response = self.model.generate_content([prompt, image_part])
+                response = self.model.generate_content(
+                    [prompt, image_part],
+                    generation_config=generation_config
+                )
             
             # Procesar respuesta de Gemini
-            result_text = response.text
+            result_text = response.text.strip()
             
             # Intentar parsear JSON de la respuesta
             try:
@@ -139,33 +157,48 @@ class DocumentValidator:
                 # Limpiar la respuesta para extraer solo el JSON
                 start_idx = result_text.find('{')
                 end_idx = result_text.rfind('}') + 1
-                json_str = result_text[start_idx:end_idx]
-                result = json.loads(json_str)
-            except:
-                # Si no se puede parsear, crear respuesta básica
-                result = {
-                    "valid": "válido" in result_text.lower() or "cumple" in result_text.lower(),
-                    "confidence": 75,
-                    "overall_assessment": result_text,
-                    "criteria_met": [],
-                    "recommendations": []
+                if start_idx >= 0 and end_idx > start_idx:
+                    json_str = result_text[start_idx:end_idx]
+                    result = json.loads(json_str)
+                else:
+                    raise ValueError("No se encontró JSON válido en la respuesta")
+            except Exception as parse_error:
+                # Si no se puede parsear, marcar como inválido por defecto
+                return {
+                    "valid": False,
+                    "reason": f"Error al procesar respuesta de validación: {str(parse_error)}",
+                    "confidence": 0,
+                    "document_type": "No identificado",
+                    "member_name": "No extraído",
+                    "analysis": {
+                        "is_official_sme": False,
+                        "name_matches": False,
+                        "is_current": False,
+                        "is_legible": False,
+                        "is_authentic": False
+                    }
                 }
             
-            return {
-                "validation_type": "SME",
-                "document_name": file.filename,
-                "result": result
-            }
+            # Validar estructura del JSON
+            if not isinstance(result, dict) or 'valid' not in result:
+                return {
+                    "valid": False,
+                    "reason": "Respuesta de validación inválida",
+                    "confidence": 0
+                }
+            
+            return result
             
         except Exception as e:
             return {
                 "valid": False,
-                "error": f"Error en validación SME: {str(e)}"
+                "reason": f"Error en validación SME: {str(e)}",
+                "confidence": 0
             }
     
     async def validate_academic_document(self, file: UploadFile, first_name: str, last_name: str, doc_type: str, doc_number: str) -> Dict[str, Any]:
         """
-        Valida un documento académico (estudiante o docente) usando Gemini AI
+        Valida un documento académico (estudiante o docente) usando Gemini AI con criterios estrictos
         """
         try:
             # Validar tipo de archivo
@@ -173,113 +206,105 @@ class DocumentValidator:
                 return {
                     "valid": False,
                     "reason": "Tipo de archivo no válido. Solo se permiten PDF, JPG, JPEG, PNG",
-                    "details": {
-                        "file_type_valid": False,
-                        "content_analysis": None
-                    }
+                    "confidence": 0
                 }
 
             # Determinar tipo de validación
             if doc_type.lower() == "teacher" or doc_type.lower() == "docente":
-                validation_type = "Academic - Teacher"
+                academic_type = "docente"
+                academic_title = "docente"
+                academic_entity = "universidad o institución educativa"
             else:
-                validation_type = "Academic - Student"
+                academic_type = "estudiante"
+                academic_title = "estudiante"
+                academic_entity = "universidad o institución educativa"
             
             # Verificar si Gemini AI está configurado
             if GEMINI_API_KEY == 'YOUR_GEMINI_API_KEY_HERE':
                 return {
-                    "valid": True,  # Validación básica sin IA
-                    "reason": "Validación básica completada (IA no configurada)",
-                    "details": {
-                        "file_type_valid": True,
-                        "content_analysis": {
-                            "note": "Gemini AI no configurado, validación básica aplicada",
-                            "file_received": True,
-                            "validation_type": validation_type,
-                            "user_data": {
-                                "name": f"{first_name} {last_name}",
-                                "doc_type": doc_type,
-                                "doc_number": doc_number
-                            }
-                        }
-                    }
+                    "valid": False,
+                    "reason": "Servicio de validación no disponible. Configure GEMINI_API_KEY.",
+                    "confidence": 0
                 }
 
             # Leer contenido del archivo
-            content = await file.read()
-            await file.seek(0)  # Reset file pointer
+            file_content = await file.read()
             
-            # Extraer texto según el tipo de archivo
-            extracted_text = ""
-            image_data = None
+            # Prompt estricto basado en la versión PHP estable
+            prompt = f"""Analiza este documento PDF o imagen y verifica si es un documento válido que certifique que la persona es {academic_title} de una {academic_entity}.
+    
+CRITERIOS DE VALIDACIÓN ESTRICTOS:
+1. El documento DEBE ser un carnet universitario, credencial de docente, carta de la universidad, o documento oficial que certifique la condición de {academic_title}
+2. DEBE contener el nombre completo del {academic_title} que coincida con los datos proporcionados
+3. DEBE estar vigente (no expirado)
+4. DEBE ser legible y auténtico (no una copia falsificada)
+5. DEBE ser un documento oficial de una institución educativa reconocida
+6. DEBE especificar claramente que la persona es {academic_title}
+
+DATOS DEL USUARIO A VERIFICAR:
+- Nombre: {first_name}
+- Apellido: {last_name}
+- Tipo: {academic_title}
+
+ANÁLISIS REQUERIDO:
+- Identifica el tipo de documento (carnet, credencial, carta, etc.)
+- Extrae el nombre completo que aparece en el documento
+- Verifica si es un documento oficial de una institución educativa
+- Comprueba si está vigente
+- Evalúa la legibilidad y autenticidad
+- Confirma que especifica la condición de {academic_title}
+
+Responde ÚNICAMENTE con un JSON válido (sin markdown, sin backticks, sin formato adicional):
+{{
+    "valid": true/false,
+    "reason": "explicación detallada de por qué es válido o inválido",
+    "confidence": 0-100,
+    "document_type": "tipo de documento identificado",
+    "member_name": "nombre completo encontrado en el documento",
+    "institution": "nombre de la institución educativa",
+    "analysis": {{
+        "is_official_document": true/false,
+        "name_matches": true/false,
+        "is_current": true/false,
+        "is_legible": true/false,
+        "is_authentic": true/false,
+        "specifies_academic_status": true/false
+    }}
+}}
+
+IMPORTANTE: 
+- NO uses markdown, NO uses backticks, NO uses formato adicional
+- Responde SOLO el JSON puro
+- Si el documento no especifica claramente que la persona es {academic_title}, marca como inválido
+- Si el documento no es de una institución educativa reconocida, marca como inválido"""
+
+            # Configurar generación con parámetros estrictos
+            generation_config = {
+                'temperature': 0.1,
+                'top_k': 1,
+                'top_p': 1,
+                'max_output_tokens': 1024
+            }
             
+            # Llamar a Gemini AI
             if file.content_type == 'application/pdf':
-                extracted_text = self.extract_text_from_pdf(content)
+                # Procesar PDF
+                text_content = self.extract_text_from_pdf(file_content)
+                response = self.model.generate_content(
+                    [prompt, f"Contenido del documento: {text_content}"],
+                    generation_config=generation_config
+                )
             else:
-                img_base64 = self.process_image(content)
-                image_data = {
+                # Procesar imagen
+                img_base64 = self.process_image(file_content)
+                image_part = {
                     "mime_type": "image/jpeg",
                     "data": img_base64
                 }
-            
-            # Definir criterios según el tipo de documento
-            if doc_type.lower() == "teacher" or doc_type.lower() == "docente":
-                academic_criteria = [
-                    "Debe ser un documento oficial de una institución educativa",
-                    "Debe mostrar el nombre completo del docente",
-                    "Debe indicar la materia o área de enseñanza",
-                    "Debe mostrar la institución donde labora",
-                    "Debe ser un documento que certifique la condición de docente o profesor"
-                ]
-            else:
-                academic_criteria = [
-                    "Debe ser un documento oficial de una institución educativa",
-                    "Debe mostrar el nombre completo del estudiante",
-                    "Debe indicar el programa de estudios o carrera",
-                    "Debe mostrar la institución donde estudia",
-                    "Debe ser un documento que certifique la condición de estudiante"
-                ]
-            
-            prompt = f"""
-Analiza este documento académico y determina si es válido para un {validation_type.lower()}.
-
-Criterios de validación:
-{chr(10).join([f"{i+1}. {criterio}" for i, criterio in enumerate(academic_criteria)])}
-
-Datos del solicitante:
-- Nombre: {first_name} {last_name}
-- Tipo de documento: {doc_type}
-- Número de documento: {doc_number}
-
-Texto extraído del documento:
-{extracted_text}
-
-Responde ÚNICAMENTE en formato JSON con esta estructura:
-{{
-    "valid": true/false,
-    "confidence": 0.0-1.0,
-    "reason": "explicación detallada",
-    "criteria_met": {{
-        "official_document": true/false,
-        "name_matches": true/false,
-        "institution_info": true/false,
-        "academic_status": true/false,
-        "document_current": true/false
-    }},
-    "extracted_info": {{
-        "student_name": "nombre si se encuentra",
-        "institution": "institución si se encuentra",
-        "program": "programa/materia si se encuentra",
-        "status": "estado académico si se encuentra"
-    }}
-}}
-"""
-
-            # Llamar a Gemini AI
-            if image_data:
-                response = self.model.generate_content([prompt, image_data])
-            else:
-                response = self.model.generate_content([prompt, f"Contenido del documento: {extracted_text}"])
+                response = self.model.generate_content(
+                    [prompt, image_part],
+                    generation_config=generation_config
+                )
 
             # Procesar respuesta
             response_text = response.text.strip()
@@ -289,38 +314,45 @@ Responde ÚNICAMENTE en formato JSON con esta estructura:
             try:
                 start_idx = response_text.find('{')
                 end_idx = response_text.rfind('}') + 1
-                json_str = response_text[start_idx:end_idx]
-                ai_result = json.loads(json_str)
-                
-                return {
-                    "valid": ai_result.get("valid", False),
-                    "reason": ai_result.get("reason", "Análisis completado"),
-                    "details": {
-                        "file_type_valid": True,
-                        "content_analysis": ai_result,
-                        "ai_confidence": ai_result.get("confidence", 0.0),
-                        "validation_type": validation_type
-                    }
-                }
-                
-            except json.JSONDecodeError:
+                if start_idx >= 0 and end_idx > start_idx:
+                    json_str = response_text[start_idx:end_idx]
+                    result = json.loads(json_str)
+                else:
+                    raise ValueError("No se encontró JSON válido en la respuesta")
+            except Exception as parse_error:
+                # Si no se puede parsear, marcar como inválido por defecto
                 return {
                     "valid": False,
-                    "reason": "Error al procesar la respuesta del análisis de IA",
-                    "details": {
-                        "file_type_valid": True,
-                        "content_analysis": {"raw_response": response_text},
-                        "validation_type": validation_type
+                    "reason": f"Error al procesar respuesta de validación: {str(parse_error)}",
+                    "confidence": 0,
+                    "document_type": "No identificado",
+                    "member_name": "No extraído",
+                    "institution": "No identificada",
+                    "analysis": {
+                        "is_official_document": False,
+                        "name_matches": False,
+                        "is_current": False,
+                        "is_legible": False,
+                        "is_authentic": False,
+                        "specifies_academic_status": False
                     }
                 }
+            
+            # Validar estructura del JSON
+            if not isinstance(result, dict) or 'valid' not in result:
+                return {
+                    "valid": False,
+                    "reason": "Respuesta de validación inválida",
+                    "confidence": 0
+                }
+            
+            return result
 
         except Exception as e:
             return {
                 "valid": False,
                 "reason": f"Error durante la validación: {str(e)}",
-                "details": {
-                    "error": str(e)
-                }
+                "confidence": 0
             }
 
 # Instancia global del validador

@@ -241,7 +241,7 @@ class OrderHandler(http.server.BaseHTTPRequestHandler):
                         print(f"Inscripciones encontradas: {existing_inscriptions}")
 
                 # Verificar si se proporcionó un archivo de documento para validación con IA
-                document_file = files.get('document')
+                document_file = files.get('file')  # El frontend envía el archivo con la clave 'file'
                 
                 if document_file and validation_type in ['sme', 'academic']:
                     # Usar validación con IA si se proporciona archivo
@@ -783,11 +783,13 @@ class OrderHandler(http.server.BaseHTTPRequestHandler):
             return ruc_database.get(ruc, None)
 
 if __name__ == "__main__":
-    PORT = 8000
+    # Configuración para producción y desarrollo
+    PORT = int(os.environ.get('PORT', 8000))
+    HOST = os.environ.get('HOST', '0.0.0.0')  # Escuchar en todas las interfaces para producción
     Handler = OrderHandler
     
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print(f"Servidor ejecutándose en http://localhost:{PORT}")
+    with socketserver.TCPServer((HOST, PORT), Handler) as httpd:
+        print(f"Servidor ejecutándose en http://{HOST}:{PORT}")
         print("Presiona Ctrl+C para detener el servidor")
         try:
             httpd.serve_forever()

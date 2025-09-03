@@ -271,45 +271,39 @@
                 populateFromURL() {
                     const urlParams = new URLSearchParams(window.location.search);
                     
-                    // Mapear parámetros URL a campos del formulario
-                    const paramMapping = {
-                        'name': 'firstName',
-                        'participant_name': 'firstName', 
-                        'email': 'email',
-                        'participant_email': 'email',
-                        'document_type': 'docType',
-                        'document_number': 'docNumber',
-                        'phone': 'phone',
-                        'company': 'company',
-                        'inscription_type': 'inscriptionType',
-                        'product_id': 'productId',
-                        'quantity': 'quantity',
-                        'language': 'language'
-                    };
-                    
-                    // Poblar campos del formulario
-                    for (const [urlParam, formField] of Object.entries(paramMapping)) {
-                        const value = urlParams.get(urlParam);
-                        if (value) {
-                            if (formField === 'firstName') {
-                                // Si viene 'name' completo, dividir en nombres y apellidos
-                                if (urlParam === 'name' || urlParam === 'participant_name') {
-                                    const nameParts = decodeURIComponent(value).split(' ');
-                                    this.formData.firstName = nameParts[0] || '';
-                                    this.formData.lastName = nameParts.slice(1).join(' ') || '';
-                                }
-                            } else if (formField === 'language') {
-                                this.language = value;
-                            } else if (this.formData.hasOwnProperty(formField)) {
-                                this.formData[formField] = decodeURIComponent(value);
-                            }
-                        }
+                    // Mapear parámetros de URL a campos del formulario
+                    if (urlParams.get('name')) {
+                        const fullName = urlParams.get('name').split(' ');
+                        this.formData.firstName = fullName[0] || '';
+                        this.formData.lastName = fullName.slice(1).join(' ') || '';
                     }
                     
-                    // Mapear product_id a inscription_type y category
-                    const productId = urlParams.get('product_id');
-                    if (productId) {
-                        this.setInscriptionFromProductId(productId);
+                    if (urlParams.get('email')) {
+                        this.formData.email = urlParams.get('email');
+                    }
+                    
+                    if (urlParams.get('document_type')) {
+                        this.formData.docType = urlParams.get('document_type');
+                    }
+                    
+                    if (urlParams.get('document_number')) {
+                        this.formData.docNumber = urlParams.get('document_number');
+                    }
+                    
+                    if (urlParams.get('phone')) {
+                        this.formData.phone = urlParams.get('phone');
+                    }
+                    
+                    if (urlParams.get('company')) {
+                        this.formData.company = urlParams.get('company');
+                    }
+                    
+                    if (urlParams.get('product_id')) {
+                        this.setInscriptionFromProductId(urlParams.get('product_id'));
+                    }
+                    
+                    if (urlParams.get('language')) {
+                        this.language = urlParams.get('language');
                     }
                 },
                 

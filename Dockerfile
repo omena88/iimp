@@ -59,13 +59,13 @@ RUN echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stderr_logfile=/var/log/nginx.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stdout_logfile=/var/log/nginx.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo '[program:fastapi]' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'command=python -m uvicorn main:app --host 0.0.0.0 --port 8000' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:simple-server]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=python simple_server.py' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'directory=/app/backend' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stderr_logfile=/var/log/fastapi.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stdout_logfile=/var/log/fastapi.out.log' >> /etc/supervisor/conf.d/supervisord.conf
+    echo 'stderr_logfile=/var/log/simple-server.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile=/var/log/simple-server.out.log' >> /etc/supervisor/conf.d/supervisord.conf
 
 # Expose port 80
 EXPOSE 80

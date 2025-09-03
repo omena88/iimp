@@ -1,0 +1,21 @@
+{
+  "version": "1.00",
+  "build": "001",
+  "release_date": "2024-01-15",
+  "changes": [
+    {
+      "version": "1.00",
+      "date": "2024-01-15",
+      "description": "Versión inicial con corrección de errores HTTP 502 y footer implementado",
+      "fixes": [
+        "Corregidos errores HTTP 502 en validación de documentos",
+        "Eliminado código duplicado en simple_server.py",
+        "Mejorado manejo de errores en endpoint de validación"
+      ],
+      "features": [
+        "Agregado footer sutil con información de Goodlinks",
+        "Sistema de versionado implementado"
+      ]
+    }
+  ]
+}

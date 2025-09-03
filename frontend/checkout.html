@@ -1119,21 +1119,39 @@
                 handleFileUpload(event) {
                     const file = event.target.files[0];
                     if (file) {
-                        // Validar tipo de archivo
-                        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-                        if (!allowedTypes.includes(file.type)) {
-                            this.showError('Solo se permiten archivos JPG, PNG o PDF.');
-                            return;
-                        }
-                        
-                        // Validar tamaño (máximo 5MB)
-                        if (file.size > 5 * 1024 * 1024) {
-                            this.showError('El archivo no debe superar los 5MB.');
-                            return;
-                        }
-                        
-                        this.uploadedFile = file;
+                        this.processFile(file);
                     }
+                },
+                
+                handleDrop(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    // Remover clases de estilo de drag
+                    event.target.classList.remove('border-perumin', 'bg-perumin-light');
+                    
+                    const files = event.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.processFile(files[0]);
+                    }
+                },
+                
+                processFile(file) {
+                    // Validar tipo de archivo
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+                    if (!allowedTypes.includes(file.type)) {
+                        this.showError('Solo se permiten archivos JPG, PNG o PDF.');
+                        return;
+                    }
+                    
+                    // Validar tamaño (máximo 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        this.showError('El archivo no debe superar los 5MB.');
+                        return;
+                    }
+                    
+                    this.uploadedFile = file;
+                    console.log('Archivo procesado:', file.name, file.type, file.size);
                 },
                 
                 async validateDocument() {
@@ -1269,21 +1287,26 @@
                     </p>
                     <p class="text-gray-600 text-sm leading-relaxed" 
                        x-show="documentValidationType === 'sme'" 
-                       x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición de SME (pequeña y mediana empresa)' : 'Please upload your document that proves your SME (small and medium enterprise) status'">
+                       x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición como miembro SME habilitado' : 'Please upload your document that proves your status as an enabled SME member'">
                     </p>
                 </div>
                 
-                <!-- Upload de archivo -->
+                <!-- Upload de archivo con Drag & Drop -->
                 <div class="mb-6">
                     <label class="block cursor-pointer">
                         <input type="file" @change="handleFileUpload" accept=".jpg,.jpeg,.png,.pdf" class="hidden">
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-perumin hover:bg-gray-50 transition-all duration-200">
+                        <div 
+                            class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-perumin hover:bg-gray-50 transition-all duration-200"
+                            @dragover.prevent="$event.dataTransfer.dropEffect = 'copy'; $el.classList.add('border-perumin', 'bg-perumin-light')"
+                            @dragleave.prevent="$el.classList.remove('border-perumin', 'bg-perumin-light')"
+                            @drop.prevent="handleDrop($event)"
+                        >
                             <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                             </svg>
                             <span class="block text-sm font-medium text-gray-600 mb-1" 
                                   x-show="!uploadedFile" 
-                                  x-text="language === 'es' ? 'Haga clic para seleccionar archivo' : 'Click to select file'">
+                                  x-text="language === 'es' ? 'Haga clic o arrastre archivo aquí' : 'Click or drag file here'">
                             </span>
                             <span class="block text-sm font-semibold text-perumin mb-1" 
                                   x-show="uploadedFile" 

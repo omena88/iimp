@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  iimp-web:
+    build: .
+    ports:
+      - "80:80"
+    environment:
+      - ENVIRONMENT=production
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/var/www/html
+    restart: unless-stopped
+    container_name: iimp-checkout-system
+
+  # Development service with hot reload
+  iimp-dev:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - ENVIRONMENT=development
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/var/www/html
+    profiles:
+      - dev
+    container_name: iimp-checkout-dev

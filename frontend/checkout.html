@@ -44,6 +44,163 @@
 
     <div class="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Resumen de Compra -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-perumin" x-text="t('purchaseSummary')">Resumen de Compra</h2>
+                    </div>
+                    <div class="p-6">
+                        <div x-show="formData.inscriptionType" class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600" x-text="language === 'es' ? 'Tipo de Inscripción:' : 'Inscription Type:'">Tipo de Inscripción:</span>
+                                <span class="font-medium capitalize" x-text="formData.inscriptionType ? t(formData.inscriptionType) : ''"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600" x-text="t('category') + ':'">Categoría:</span>
+                                <span class="font-medium" x-text="formData.category || (language === 'es' ? 'No seleccionada' : 'Not selected')"></span>
+                            </div>
+                            <div class="border-t border-gray-200 pt-4">
+                                <div class="flex justify-between items-center text-lg font-semibold">
+                                    <span x-text="t('total') + ':'">Total:</span>
+                                    <span class="text-perumin" x-text="getPrice()"></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Opción de compra por día para productos de entrenamiento -->
+                            <div x-show="(getProductId() === '158' || getProductId() === '154') && formData.inscriptionType" class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div class="mb-3">
+                                    <p class="text-sm font-medium text-gray-700" x-text="language === 'es' ? '¿Deseas comprar por día?' : 'Do you want to buy per day?'">¿Deseas comprar por día?</p>
+                                    <p class="text-xs text-gray-500 mt-1" x-text="language === 'es' ? 'Selecciona días específicos de asistencia' : 'Select specific attendance days'">Selecciona días específicos de asistencia</p>
+                                </div>
+                                <div class="flex space-x-3">
+                                    <button @click="enableDaySelection(false)" 
+                                            :class="!showDaySelection ? 'bg-perumin text-white' : 'bg-white text-gray-700 border border-gray-300'"
+                                            class="flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors">
+                                        <span x-text="language === 'es' ? 'Precio completo' : 'Full price'">Precio completo</span>
+                                    </button>
+                                    <button @click="enableDaySelection(true)" 
+                                            :class="showDaySelection ? 'bg-perumin text-white' : 'bg-white text-gray-700 border border-gray-300'"
+                                            class="flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors">
+                                        <span x-text="language === 'es' ? 'Por día' : 'Per day'">Por día</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Selección de días cuando está habilitada -->
+                            <div x-show="showDaySelection" class="mt-4 space-y-3">
+                                <div class="space-y-2">
+                                    <div class="day-option">
+                                        <label class="flex items-center justify-between p-2 border border-gray-200 rounded-md cursor-pointer hover:border-perumin transition-all duration-200" :class="formData.selectedDays.includes('monday') ? 'border-perumin bg-perumin/5' : ''">
+                                            <div class="flex items-center space-x-2">
+                                                <input type="checkbox" x-model="formData.selectedDays" value="monday" @change="updateTotalPrice()" class="sr-only">
+                                                <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
+                                                     :class="formData.selectedDays.includes('monday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
+                                                    <svg x-show="formData.selectedDays.includes('monday')" class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <span class="text-sm font-medium" :class="formData.selectedDays.includes('monday') ? 'text-perumin' : 'text-gray-900'" x-text="language === 'es' ? 'Lunes 22 Sept' : 'Monday 22 Sept'">Lunes 22 Sept</span>
+                                                </div>
+                                            </div>
+                                            <span class="text-sm font-semibold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="day-option">
+                                        <label class="flex items-center justify-between p-2 border border-gray-200 rounded-md cursor-pointer hover:border-perumin transition-all duration-200" :class="formData.selectedDays.includes('tuesday') ? 'border-perumin bg-perumin/5' : ''">
+                                            <div class="flex items-center space-x-2">
+                                                <input type="checkbox" x-model="formData.selectedDays" value="tuesday" @change="updateTotalPrice()" class="sr-only">
+                                                <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
+                                                     :class="formData.selectedDays.includes('tuesday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
+                                                    <svg x-show="formData.selectedDays.includes('tuesday')" class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <span class="text-sm font-medium" :class="formData.selectedDays.includes('tuesday') ? 'text-perumin' : 'text-gray-900'" x-text="language === 'es' ? 'Martes 23 Sept' : 'Tuesday 23 Sept'">Martes 23 Sept</span>
+                                                </div>
+                                            </div>
+                                            <span class="text-sm font-semibold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="day-option">
+                                        <label class="flex items-center justify-between p-2 border border-gray-200 rounded-md cursor-pointer hover:border-perumin transition-all duration-200" :class="formData.selectedDays.includes('wednesday') ? 'border-perumin bg-perumin/5' : ''">
+                                            <div class="flex items-center space-x-2">
+                                                <input type="checkbox" x-model="formData.selectedDays" value="wednesday" @change="updateTotalPrice()" class="sr-only">
+                                                <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
+                                                     :class="formData.selectedDays.includes('wednesday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
+                                                    <svg x-show="formData.selectedDays.includes('wednesday')" class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <span class="text-sm font-medium" :class="formData.selectedDays.includes('wednesday') ? 'text-perumin' : 'text-gray-900'" x-text="language === 'es' ? 'Miércoles 24 Sept' : 'Wednesday 24 Sept'">Miércoles 24 Sept</span>
+                                                </div>
+                                            </div>
+                                            <span class="text-sm font-semibold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="day-option">
+                                        <label class="flex items-center justify-between p-2 border border-gray-200 rounded-md cursor-pointer hover:border-perumin transition-all duration-200" :class="formData.selectedDays.includes('thursday') ? 'border-perumin bg-perumin/5' : ''">
+                                            <div class="flex items-center space-x-2">
+                                                <input type="checkbox" x-model="formData.selectedDays" value="thursday" @change="updateTotalPrice()" class="sr-only">
+                                                <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
+                                                     :class="formData.selectedDays.includes('thursday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
+                                                    <svg x-show="formData.selectedDays.includes('thursday')" class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <span class="text-sm font-medium" :class="formData.selectedDays.includes('thursday') ? 'text-perumin' : 'text-gray-900'" x-text="language === 'es' ? 'Jueves 25 Sept' : 'Thursday 25 Sept'">Jueves 25 Sept</span>
+                                                </div>
+                                            </div>
+                                            <span class="text-sm font-semibold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="day-option">
+                                        <label class="flex items-center justify-between p-2 border border-gray-200 rounded-md cursor-pointer hover:border-perumin transition-all duration-200" :class="formData.selectedDays.includes('friday') ? 'border-perumin bg-perumin/5' : ''">
+                                            <div class="flex items-center space-x-2">
+                                                <input type="checkbox" x-model="formData.selectedDays" value="friday" @change="updateTotalPrice()" class="sr-only">
+                                                <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
+                                                     :class="formData.selectedDays.includes('friday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
+                                                    <svg x-show="formData.selectedDays.includes('friday')" class="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <span class="text-sm font-medium" :class="formData.selectedDays.includes('friday') ? 'text-perumin' : 'text-gray-900'" x-text="language === 'es' ? 'Viernes 26 Sept' : 'Friday 26 Sept'">Viernes 26 Sept</span>
+                                                </div>
+                                            </div>
+                                            <span class="text-sm font-semibold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div x-show="formData.selectedDays.length === 0" class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <div class="flex items-center space-x-2">
+                                        <svg class="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <p class="text-xs text-yellow-800" x-text="t('selectAtLeastOneDay') || 'Debes seleccionar al menos un día de asistencia.'">Debes seleccionar al menos un día de asistencia.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button x-show="formData.inscriptionType && formData.category && formData.docType && formData.docNumber && formData.firstName && formData.lastName && formData.email && formData.phone" 
+                                    @click="processInscription()" 
+                                    class="w-full bg-perumin text-white py-3 px-4 rounded-lg font-medium hover:bg-perumin-dark transition-colors">
+                                <span x-text="t('processInscription')">Procesar Inscripción</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Formulario Principal -->
             <div class="lg:col-span-2">
                 <!-- Inscripciones Existentes -->
@@ -173,136 +330,7 @@
                     </div>
                 </div>
 
-                <!-- Day Selection for Training Products -->
-                <div x-show="showDaySelection" class="bg-white rounded-xl shadow-sm border border-gray-200 mt-6">
-                    <div class="px-6 py-4 border-b border-gray-200">
-                        <h3 class="text-lg font-semibold text-perumin" x-text="t('daySelection')">Selección de Días</h3>
-                        <p class="text-sm text-gray-600 mt-1" x-text="t('selectDays')">Selecciona los días de asistencia</p>
-                    </div>
-                    <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div class="day-option">
-                                <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-perumin transition-all duration-200 hover:shadow-md" :class="formData.selectedDays.includes('monday') ? 'border-perumin bg-perumin/5 shadow-sm' : ''">
-                                    <div class="flex items-center space-x-3">
-                                        <input type="checkbox" x-model="formData.selectedDays" value="monday" @change="updateTotalPrice()" class="sr-only">
-                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
-                                             :class="formData.selectedDays.includes('monday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
-                                            <svg x-show="formData.selectedDays.includes('monday')" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="font-medium" :class="formData.selectedDays.includes('monday') ? 'text-perumin' : 'text-gray-900'" x-text="t('monday')">Lunes 22</span>
-                                            <span class="text-sm text-gray-500">Septiembre</span>
-                                        </div>
-                                    </div>
-                                    <span class="font-bold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
-                                </label>
-                            </div>
-                            
-                            <div class="day-option">
-                                <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-perumin transition-all duration-200 hover:shadow-md" :class="formData.selectedDays.includes('tuesday') ? 'border-perumin bg-perumin/5 shadow-sm' : ''">
-                                    <div class="flex items-center space-x-3">
-                                        <input type="checkbox" x-model="formData.selectedDays" value="tuesday" @change="updateTotalPrice()" class="sr-only">
-                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
-                                             :class="formData.selectedDays.includes('tuesday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
-                                            <svg x-show="formData.selectedDays.includes('tuesday')" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="font-medium" :class="formData.selectedDays.includes('tuesday') ? 'text-perumin' : 'text-gray-900'" x-text="t('tuesday')">Martes 23</span>
-                                            <span class="text-sm text-gray-500">Septiembre</span>
-                                        </div>
-                                    </div>
-                                    <span class="font-bold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
-                                </label>
-                            </div>
-                            
-                            <div class="day-option">
-                                <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-perumin transition-all duration-200 hover:shadow-md" :class="formData.selectedDays.includes('wednesday') ? 'border-perumin bg-perumin/5 shadow-sm' : ''">
-                                    <div class="flex items-center space-x-3">
-                                        <input type="checkbox" x-model="formData.selectedDays" value="wednesday" @change="updateTotalPrice()" class="sr-only">
-                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
-                                             :class="formData.selectedDays.includes('wednesday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
-                                            <svg x-show="formData.selectedDays.includes('wednesday')" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="font-medium" :class="formData.selectedDays.includes('wednesday') ? 'text-perumin' : 'text-gray-900'" x-text="t('wednesday')">Miércoles 24</span>
-                                            <span class="text-sm text-gray-500">Septiembre</span>
-                                        </div>
-                                    </div>
-                                    <span class="font-bold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
-                                </label>
-                            </div>
-                            
-                            <div class="day-option">
-                                <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-perumin transition-all duration-200 hover:shadow-md" :class="formData.selectedDays.includes('thursday') ? 'border-perumin bg-perumin/5 shadow-sm' : ''">
-                                    <div class="flex items-center space-x-3">
-                                        <input type="checkbox" x-model="formData.selectedDays" value="thursday" @change="updateTotalPrice()" class="sr-only">
-                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
-                                             :class="formData.selectedDays.includes('thursday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
-                                            <svg x-show="formData.selectedDays.includes('thursday')" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="font-medium" :class="formData.selectedDays.includes('thursday') ? 'text-perumin' : 'text-gray-900'" x-text="t('thursday')">Jueves 25</span>
-                                            <span class="text-sm text-gray-500">Septiembre</span>
-                                        </div>
-                                    </div>
-                                    <span class="font-bold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
-                                </label>
-                            </div>
-                            
-                            <div class="day-option">
-                                <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-perumin transition-all duration-200 hover:shadow-md" :class="formData.selectedDays.includes('friday') ? 'border-perumin bg-perumin/5 shadow-sm' : ''">
-                                    <div class="flex items-center space-x-3">
-                                        <input type="checkbox" x-model="formData.selectedDays" value="friday" @change="updateTotalPrice()" class="sr-only">
-                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
-                                             :class="formData.selectedDays.includes('friday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
-                                            <svg x-show="formData.selectedDays.includes('friday')" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                            </svg>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="font-medium" :class="formData.selectedDays.includes('friday') ? 'text-perumin' : 'text-gray-900'" x-text="t('friday')">Viernes 26</span>
-                                            <span class="text-sm text-gray-500">Septiembre</span>
-                                        </div>
-                                    </div>
-                                    <span class="font-bold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-6 p-4 bg-gradient-to-r from-perumin/10 to-perumin/5 rounded-lg border border-perumin/20">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-sm text-gray-600" x-text="t('pricePerDay')">Precio por día:</span>
-                                <span class="font-medium" x-text="'$' + currentProductPrice.toLocaleString() + ' USD'">$250 USD</span>
-                            </div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm text-gray-600">Días seleccionados:</span>
-                                <span class="font-medium" x-text="formData.selectedDays.length + ' ' + (formData.selectedDays.length === 1 ? 'día' : 'días')">0 días</span>
-                            </div>
-                            <hr class="border-perumin/20 my-3">
-                            <div class="flex justify-between items-center">
-                                <span class="font-semibold text-gray-900" x-text="t('totalPrice')">Precio total:</span>
-                                <span class="font-bold text-xl text-perumin" x-text="'$' + (formData.selectedDays.length * currentProductPrice).toLocaleString() + ' USD'">$0 USD</span>
-                            </div>
-                            <div x-show="formData.selectedDays.length > 0" class="text-xs text-gray-500 mt-2 text-center">
-                                <span x-text="'$' + currentProductPrice.toLocaleString() + ' × ' + formData.selectedDays.length + ' = $' + (formData.selectedDays.length * currentProductPrice).toLocaleString()"></span>
-                            </div>
-                        </div>
-                        
-                        <div x-show="formData.selectedDays.length === 0" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                            <div class="flex items-center space-x-2">
-                                <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                                </svg>
-                                <p class="text-sm text-yellow-800" x-text="t('selectAtLeastOneDay') || 'Debes seleccionar al menos un día de asistencia.'">Debes seleccionar al menos un día de asistencia.</p>
-                            </div>
+                <!-- Day Selection for Training Products - Moved to Purchase Summary -->
                         </div>
                     </div>
                 </div>
@@ -310,47 +338,7 @@
 
             </div>
 
-            <!-- Resumen de Compra -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8">
-                    <div class="px-6 py-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-perumin" x-text="t('purchaseSummary')">Resumen de Compra</h2>
-                    </div>
-                    <div class="p-6">
-                        <div x-show="formData.inscriptionType" class="space-y-4">
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600" x-text="language === 'es' ? 'Tipo de Inscripción:' : 'Inscription Type:'">Tipo de Inscripción:</span>
-                                <span class="font-medium capitalize" x-text="formData.inscriptionType ? t(formData.inscriptionType) : ''"></span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600" x-text="t('category') + ':'">Categoría:</span>
-                                <span class="font-medium" x-text="formData.category || (language === 'es' ? 'No seleccionada' : 'Not selected')"></span>
-                            </div>
-                            <div class="border-t border-gray-200 pt-4">
-                                <div class="flex justify-between items-center text-lg font-semibold">
-                                    <span x-text="t('total') + ':'">Total:</span>
-                                    <span class="text-perumin" x-text="getPrice()"></span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div x-show="!formData.inscriptionType" class="text-center text-gray-500 py-8">
-                            <p x-text="language === 'es' ? 'Seleccione un tipo de inscripción para ver el resumen' : 'Select an inscription type to see the summary'">Seleccione un tipo de inscripción para ver el resumen</p>
-                        </div>
 
-                        <button @click="processOrder()" :disabled="!isFormValid() || isLoading" class="w-full mt-6 bg-perumin text-white py-3 px-4 rounded-lg font-medium hover:bg-perumin-dark disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
-                            <span x-show="!isLoading" x-text="t('processInscription')">Procesar Inscripción</span>
-                            <span x-show="isLoading" class="flex items-center justify-center">
-                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span x-text="t('processing')">Procesando...</span>
-                            </span>
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -678,71 +666,82 @@
                         this.formData.docType = '';
                         return;
                     }
-                    // Lógica automática según el tipo de documento
-                    if (this.formData.docType === 'DNI') {
-                        // DNI → Boleta automática
-                        this.formData.receiptType = '03';
-                        this.formData.billingDocType = '1'; // DNI
-                        this.formData.billingDocNumber = this.formData.docNumber;
-                    } else if (this.formData.docType === 'CE' || this.formData.docType === 'PASAPORTE') {
-                        // CE/Pasaporte → Permitir elegir entre Boleta o Factura
-                        // Por defecto Boleta con RUC extranjero
-                        if (!this.formData.receiptType || this.formData.receiptType === '') {
-                            this.formData.receiptType = '03';
-                        }
-                        
-                        // Si es Boleta, usar RUC extranjero
-                        if (this.formData.receiptType === '03') {
-                            this.formData.billingDocType = '7'; // RUC extranjero
-                            this.formData.rucNumber = this.formData.docNumber;
-                            this.formData.businessName = (this.formData.firstName + ' ' + this.formData.lastName).trim();
-                        }
-                        // Si es Factura, permitir solo RUC peruano
-                        else if (this.formData.receiptType === '01') {
-                            this.formData.billingDocType = '6'; // RUC peruano
-                            this.formData.rucNumber = '';
-                            this.formData.businessName = '';
-                        }
-                    }
                     
                     // Limpiar validaciones
                     this.rucValidationMessage = '';
                     this.rucValidationStatus = '';
+                    
+                    // Lógica automática según el tipo de documento
+                    if (this.formData.docType === 'DNI') {
+                        // DNI → Boleta automática con DNI peruano
+                        this.formData.receiptType = '03';
+                        this.formData.billingDocType = '1'; // DNI peruano
+                        this.formData.billingDocNumber = this.formData.docNumber;
+                        // Limpiar campos de RUC
+                        this.formData.rucNumber = '';
+                        this.formData.businessName = '';
+                    } else if (this.formData.docType === 'CE' || this.formData.docType === 'PASAPORTE') {
+                        // CE/Pasaporte → Por defecto Boleta con RUC extranjero
+                        this.formData.receiptType = '03';
+                        this.formData.billingDocType = '7'; // RUC extranjero
+                        this.formData.rucNumber = this.formData.docNumber;
+                        this.formData.businessName = (this.formData.firstName + ' ' + this.formData.lastName).trim();
+                        this.formData.billingDocNumber = '';
+                    } else {
+                        // Para otros tipos, resetear campos de facturación
+                        this.formData.receiptType = '03';
+                        this.formData.billingDocType = '';
+                        this.formData.rucNumber = '';
+                        this.formData.businessName = '';
+                        this.formData.billingDocNumber = '';
+                    }
                 },
                 
                 updateBillingDocOptions() {
-                    // Resetear campos cuando cambia el tipo de comprobante
-                    this.formData.billingDocType = '';
-                    this.formData.rucNumber = '';
-                    this.formData.businessName = '';
-                    this.formData.billingDocNumber = '';
+                    // Limpiar validaciones
                     this.rucValidationMessage = '';
                     this.rucValidationStatus = '';
                     
                     // Aplicar lógica según tipo de documento y comprobante
                     if (this.formData.docType === 'DNI') {
                         if (this.formData.receiptType === '03') {
-                            this.formData.billingDocType = '1'; // DNI
+                            // Boleta con DNI peruano
+                            this.formData.billingDocType = '1';
                             this.formData.billingDocNumber = this.formData.docNumber;
+                            this.formData.rucNumber = '';
+                            this.formData.businessName = '';
                         } else if (this.formData.receiptType === '01') {
-                            this.formData.billingDocType = '6'; // RUC peruano
+                            // Factura con RUC peruano
+                            this.formData.billingDocType = '6';
+                            this.formData.billingDocNumber = '';
+                            this.formData.rucNumber = '';
+                            this.formData.businessName = '';
                         }
                     } else if (this.formData.docType === 'CE' || this.formData.docType === 'PASAPORTE') {
                         if (this.formData.receiptType === '03') {
-                            this.formData.billingDocType = '7'; // RUC extranjero
+                            // Boleta con RUC extranjero
+                            this.formData.billingDocType = '7';
                             this.formData.rucNumber = this.formData.docNumber;
                             this.formData.businessName = (this.formData.firstName + ' ' + this.formData.lastName).trim();
+                            this.formData.billingDocNumber = '';
                         } else if (this.formData.receiptType === '01') {
-                            this.formData.billingDocType = '6'; // RUC peruano
+                            // Factura con RUC peruano
+                            this.formData.billingDocType = '6';
+                            this.formData.rucNumber = '';
+                            this.formData.businessName = '';
+                            this.formData.billingDocNumber = '';
                         }
                     } else {
                         // Para otros tipos de documento
                         if (this.formData.receiptType === '01') {
                             this.formData.billingDocType = '6'; // RUC peruano
+                        } else {
+                            this.formData.billingDocType = '';
                         }
+                        this.formData.rucNumber = '';
+                        this.formData.businessName = '';
+                        this.formData.billingDocNumber = '';
                     }
-                    
-                    this.updateBillingFields();
                 },
                 
                 updateBillingFields() {
@@ -847,12 +846,24 @@
                     const productId = this.getProductIdFromURL();
                     this.formData.productId = productId;
                     
-                    // Mostrar selección de días para productos 158 y 154
+                    // Para productos 158 y 154, inicialmente no mostrar selección de días
                     if (productId === '158' || productId === '154') {
-                        this.showDaySelection = true;
+                        this.showDaySelection = false; // Inicialmente false
                         this.currentProductPrice = this.productPrices[productId] || 250;
                     } else {
                         this.showDaySelection = false;
+                    }
+                },
+                
+                // Habilitar o deshabilitar selección de días
+                enableDaySelection(enable) {
+                    this.showDaySelection = enable;
+                    if (enable) {
+                        // Limpiar días seleccionados al activar
+                        this.formData.selectedDays = [];
+                    } else {
+                        // Limpiar días seleccionados al desactivar
+                        this.formData.selectedDays = [];
                     }
                 },
                 

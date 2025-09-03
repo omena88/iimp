@@ -283,15 +283,15 @@
                     }
                     
                     if (urlParams.get('document_type')) {
-                    const docTypeCode = urlParams.get('document_type');
-                    // Mapear códigos numéricos a tipos de documento
-                     const docTypeMapping = {
-                         '1': 'DNI',
-                         '4': 'Carnet de Extranjería', 
-                         '7': 'Pasaporte'
-                     };
-                    this.formData.docType = docTypeMapping[docTypeCode] || docTypeCode;
-                }
+                        const docTypeCode = urlParams.get('document_type');
+                        // Mapear códigos numéricos a tipos de documento
+                        const docTypeMapping = {
+                            '1': 'DNI',
+                            '4': 'Carnet de Extranjería', 
+                            '7': 'Pasaporte'
+                        };
+                        this.formData.docType = docTypeMapping[docTypeCode] || docTypeCode;
+                    }
                     
                     if (urlParams.get('document_number')) {
                         this.formData.docNumber = urlParams.get('document_number');

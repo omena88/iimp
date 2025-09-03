@@ -166,13 +166,144 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('businessName')">Razón Social</label>
                                 <input type="text" x-model="formData.businessName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterBusinessName')" :readonly="rucValidationStatus === 'success'">
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('company')">Empresa</label>
-                                <input type="text" x-model="formData.billingCompany" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterBillingCompany')">
-                            </div>
+
                         </div>
 
 
+                    </div>
+                </div>
+
+                <!-- Day Selection for Training Products -->
+                <div x-show="showDaySelection" class="bg-white rounded-xl shadow-sm border border-gray-200 mt-6">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-perumin" x-text="t('daySelection')">Selección de Días</h3>
+                        <p class="text-sm text-gray-600 mt-1" x-text="t('selectDays')">Selecciona los días de asistencia</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="day-option">
+                                <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-perumin transition-all duration-200 hover:shadow-md" :class="formData.selectedDays.includes('monday') ? 'border-perumin bg-perumin/5 shadow-sm' : ''">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" x-model="formData.selectedDays" value="monday" @change="updateTotalPrice()" class="sr-only">
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                             :class="formData.selectedDays.includes('monday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
+                                            <svg x-show="formData.selectedDays.includes('monday')" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="font-medium" :class="formData.selectedDays.includes('monday') ? 'text-perumin' : 'text-gray-900'" x-text="t('monday')">Lunes 22</span>
+                                            <span class="text-sm text-gray-500">Septiembre</span>
+                                        </div>
+                                    </div>
+                                    <span class="font-bold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
+                                </label>
+                            </div>
+                            
+                            <div class="day-option">
+                                <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-perumin transition-all duration-200 hover:shadow-md" :class="formData.selectedDays.includes('tuesday') ? 'border-perumin bg-perumin/5 shadow-sm' : ''">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" x-model="formData.selectedDays" value="tuesday" @change="updateTotalPrice()" class="sr-only">
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                             :class="formData.selectedDays.includes('tuesday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
+                                            <svg x-show="formData.selectedDays.includes('tuesday')" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="font-medium" :class="formData.selectedDays.includes('tuesday') ? 'text-perumin' : 'text-gray-900'" x-text="t('tuesday')">Martes 23</span>
+                                            <span class="text-sm text-gray-500">Septiembre</span>
+                                        </div>
+                                    </div>
+                                    <span class="font-bold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
+                                </label>
+                            </div>
+                            
+                            <div class="day-option">
+                                <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-perumin transition-all duration-200 hover:shadow-md" :class="formData.selectedDays.includes('wednesday') ? 'border-perumin bg-perumin/5 shadow-sm' : ''">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" x-model="formData.selectedDays" value="wednesday" @change="updateTotalPrice()" class="sr-only">
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                             :class="formData.selectedDays.includes('wednesday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
+                                            <svg x-show="formData.selectedDays.includes('wednesday')" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="font-medium" :class="formData.selectedDays.includes('wednesday') ? 'text-perumin' : 'text-gray-900'" x-text="t('wednesday')">Miércoles 24</span>
+                                            <span class="text-sm text-gray-500">Septiembre</span>
+                                        </div>
+                                    </div>
+                                    <span class="font-bold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
+                                </label>
+                            </div>
+                            
+                            <div class="day-option">
+                                <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-perumin transition-all duration-200 hover:shadow-md" :class="formData.selectedDays.includes('thursday') ? 'border-perumin bg-perumin/5 shadow-sm' : ''">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" x-model="formData.selectedDays" value="thursday" @change="updateTotalPrice()" class="sr-only">
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                             :class="formData.selectedDays.includes('thursday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
+                                            <svg x-show="formData.selectedDays.includes('thursday')" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="font-medium" :class="formData.selectedDays.includes('thursday') ? 'text-perumin' : 'text-gray-900'" x-text="t('thursday')">Jueves 25</span>
+                                            <span class="text-sm text-gray-500">Septiembre</span>
+                                        </div>
+                                    </div>
+                                    <span class="font-bold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
+                                </label>
+                            </div>
+                            
+                            <div class="day-option">
+                                <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-perumin transition-all duration-200 hover:shadow-md" :class="formData.selectedDays.includes('friday') ? 'border-perumin bg-perumin/5 shadow-sm' : ''">
+                                    <div class="flex items-center space-x-3">
+                                        <input type="checkbox" x-model="formData.selectedDays" value="friday" @change="updateTotalPrice()" class="sr-only">
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                             :class="formData.selectedDays.includes('friday') ? 'border-perumin bg-perumin' : 'border-gray-300'">
+                                            <svg x-show="formData.selectedDays.includes('friday')" class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="font-medium" :class="formData.selectedDays.includes('friday') ? 'text-perumin' : 'text-gray-900'" x-text="t('friday')">Viernes 26</span>
+                                            <span class="text-sm text-gray-500">Septiembre</span>
+                                        </div>
+                                    </div>
+                                    <span class="font-bold text-perumin" x-text="'$' + currentProductPrice.toLocaleString()">$250</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 p-4 bg-gradient-to-r from-perumin/10 to-perumin/5 rounded-lg border border-perumin/20">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-sm text-gray-600" x-text="t('pricePerDay')">Precio por día:</span>
+                                <span class="font-medium" x-text="'$' + currentProductPrice.toLocaleString() + ' USD'">$250 USD</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-600">Días seleccionados:</span>
+                                <span class="font-medium" x-text="formData.selectedDays.length + ' ' + (formData.selectedDays.length === 1 ? 'día' : 'días')">0 días</span>
+                            </div>
+                            <hr class="border-perumin/20 my-3">
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-900" x-text="t('totalPrice')">Precio total:</span>
+                                <span class="font-bold text-xl text-perumin" x-text="'$' + (formData.selectedDays.length * currentProductPrice).toLocaleString() + ' USD'">$0 USD</span>
+                            </div>
+                            <div x-show="formData.selectedDays.length > 0" class="text-xs text-gray-500 mt-2 text-center">
+                                <span x-text="'$' + currentProductPrice.toLocaleString() + ' × ' + formData.selectedDays.length + ' = $' + (formData.selectedDays.length * currentProductPrice).toLocaleString()"></span>
+                            </div>
+                        </div>
+                        
+                        <div x-show="formData.selectedDays.length === 0" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                <p class="text-sm text-yellow-800" x-text="t('selectAtLeastOneDay') || 'Debes seleccionar al menos un día de asistencia.'">Debes seleccionar al menos un día de asistencia.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -236,7 +367,6 @@
                         lastName: 'Apellidos',
                         email: 'Correo Electrónico',
                         phone: 'Teléfono',
-                        company: 'Empresa',
                         inscriptionType: 'Tipo de Inscripción',
                         category: 'Categoría',
                         currency: 'Moneda',
@@ -253,7 +383,6 @@
                         enterLastName: 'Ingresa apellidos',
                         enterEmail: 'Ingresa correo electrónico',
                         enterPhone: 'Ingresa teléfono',
-                        enterCompany: 'Ingresa empresa (opcional)',
                         documentType: 'Tipo de Documento',
                         documentNumber: 'Número de Documento',
                         billingSection: 'Información de Facturación',
@@ -263,7 +392,7 @@
                         billingDocType: 'Tipo de Documento de Facturación',
                         selectBillingDocType: 'Seleccionar tipo de documento',
                         billingDocDNI: 'DNI (Peruano)',
-                        billingDocRUC: 'RUC',
+                        billingDocRUC: 'RUC (Perú)',
                         billingDocRUCForeign: 'RUC (extranjero)',
                         rucNumber: 'Número de RUC',
                         enterRUC: 'Ingresa número de RUC',
@@ -271,7 +400,8 @@
                         enterBusinessName: 'Razón Social (se autocompletará)',
                         billingDocNumber: 'Número de Documento',
                         enterBillingDocNumber: 'Número de documento',
-                        enterBillingCompany: 'Ingresa empresa para facturación'
+                        academicPeruOnly: 'Los productos académicos están disponibles solo para peruanos con DNI.',
+                        smePeruOnly: 'El producto SME está disponible solo para peruanos con DNI.'
                     },
                     en: {
                         personalData: 'Personal Data',
@@ -281,7 +411,6 @@
                         lastName: 'Last Name',
                         email: 'Email',
                         phone: 'Phone',
-                        company: 'Company',
                         inscriptionType: 'Inscription Type',
                         category: 'Category',
                         currency: 'Currency',
@@ -298,7 +427,6 @@
                         enterLastName: 'Enter last name',
                         enterEmail: 'Enter email',
                         enterPhone: 'Enter phone',
-                        enterCompany: 'Enter company (optional)',
                         documentType: 'Document Type',
                         documentNumber: 'Document Number',
                         billingSection: 'Billing Information',
@@ -316,7 +444,18 @@
                         enterBusinessName: 'Business Name (auto-filled)',
                         billingDocNumber: 'Document Number',
                         enterBillingDocNumber: 'Document number',
-                        enterBillingCompany: 'Enter company for billing'
+                        daySelection: 'Day Selection',
+                        selectDays: 'Select attendance days',
+                        monday: 'Monday 22',
+                        tuesday: 'Tuesday 23',
+                        wednesday: 'Wednesday 24',
+                        thursday: 'Thursday 25',
+                        friday: 'Friday 26',
+                        pricePerDay: 'Price per day',
+                        totalPrice: 'Total price',
+                        selectAtLeastOneDay: 'You must select at least one attendance day.',
+                        academicPeruOnly: 'Academic products are available only for Peruvians with DNI.',
+                        smePeruOnly: 'SME product is available only for Peruvians with DNI.'
                     }
                 },
                 formData: {
@@ -326,7 +465,6 @@
                     lastName: '',
                     email: '',
                     phone: '',
-                    company: '',
                     inscriptionType: '',
                     category: '',
                     currency: 'USD',
@@ -336,8 +474,10 @@
                     billingDocType: '',
                     rucNumber: '',
                     businessName: '',
-                    billingCompany: '',
-                    billingDocNumber: ''
+                    billingDocNumber: '',
+                    // Campos para selección de días
+                    selectedDays: [],
+                    productId: null
                 },
                 existingInscriptions: [],
                 isLoading: false,
@@ -345,11 +485,19 @@
                 rucValidationMessage: '',
                 rucValidationStatus: '', // 'success', 'error', ''
                 rucTimeout: null,
+                // Variables para selección de días
+                showDaySelection: false,
+                currentProductPrice: 250,
+                productPrices: {
+                    '158': 250,
+                    '154': 700
+                },
                 
                 // Inicialización - poblar campos desde URL
                 init() {
                     console.log('Iniciando Alpine.js component');
                     this.populateFromURL();
+                    this.detectProductId();
                     console.log('Después de populateFromURL, docType:', this.formData.docType);
                 },
                 
@@ -404,10 +552,6 @@
                     
                     if (urlParams.get('phone')) {
                         this.formData.phone = urlParams.get('phone');
-                    }
-                    
-                    if (urlParams.get('company')) {
-                        this.formData.company = urlParams.get('company');
                     }
                     
                     if (urlParams.get('product_id')) {
@@ -483,8 +627,57 @@
                     }
                 },
                 
+                // Validaciones de documentos por ID de producto
+                validateDocumentForProduct() {
+                    const productId = this.getProductIdFromURL();
+                    
+                    // Validaciones específicas por producto
+                    if (productId === '151' || productId === '152') {
+                        // Productos académicos: solo peruanos (DNI)
+                        if (this.formData.docType !== 'DNI') {
+                            this.showError(this.translations[this.currentLanguage].academicPeruOnly || 'Los productos académicos están disponibles solo para peruanos con DNI.');
+                            return false;
+                        }
+                    }
+                    
+                    if (productId === '150') {
+                        // Producto SME: solo peruanos (DNI)
+                        if (this.formData.docType !== 'DNI') {
+                            this.showError(this.translations[this.currentLanguage].smePeruOnly || 'El producto SME está disponible solo para peruanos con DNI.');
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                },
+                
+                getProductIdFromURL() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    return urlParams.get('product_id') || '';
+                },
+                
+                showError(message) {
+                    // Mostrar mensaje de error
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-message';
+                    errorDiv.style.cssText = 'background: #dc3545; color: white; padding: 10px; margin: 10px 0; border-radius: 5px;';
+                    errorDiv.textContent = message;
+                    
+                    const form = document.querySelector('.checkout-form');
+                    if (form) {
+                        form.insertBefore(errorDiv, form.firstChild);
+                        setTimeout(() => errorDiv.remove(), 5000);
+                    }
+                },
+                
                 // Funciones para manejar la lógica de facturación
                 handleDocTypeChange() {
+                    // Validar documento para el producto
+                    if (!this.validateDocumentForProduct()) {
+                        // Si la validación falla, resetear el tipo de documento
+                        this.formData.docType = '';
+                        return;
+                    }
                     // Lógica automática según el tipo de documento
                     if (this.formData.docType === 'DNI') {
                         // DNI → Boleta automática
@@ -492,11 +685,24 @@
                         this.formData.billingDocType = '1'; // DNI
                         this.formData.billingDocNumber = this.formData.docNumber;
                     } else if (this.formData.docType === 'CE' || this.formData.docType === 'PASAPORTE') {
-                        // Otros documentos → Boleta + RUC extranjero
-                        this.formData.receiptType = '03';
-                        this.formData.billingDocType = '7'; // RUC extranjero
-                        this.formData.rucNumber = this.formData.docNumber;
-                        this.formData.businessName = (this.formData.firstName + ' ' + this.formData.lastName).trim();
+                        // CE/Pasaporte → Permitir elegir entre Boleta o Factura
+                        // Por defecto Boleta con RUC extranjero
+                        if (!this.formData.receiptType || this.formData.receiptType === '') {
+                            this.formData.receiptType = '03';
+                        }
+                        
+                        // Si es Boleta, usar RUC extranjero
+                        if (this.formData.receiptType === '03') {
+                            this.formData.billingDocType = '7'; // RUC extranjero
+                            this.formData.rucNumber = this.formData.docNumber;
+                            this.formData.businessName = (this.formData.firstName + ' ' + this.formData.lastName).trim();
+                        }
+                        // Si es Factura, permitir solo RUC peruano
+                        else if (this.formData.receiptType === '01') {
+                            this.formData.billingDocType = '6'; // RUC peruano
+                            this.formData.rucNumber = '';
+                            this.formData.businessName = '';
+                        }
                     }
                     
                     // Limpiar validaciones
@@ -513,11 +719,30 @@
                     this.rucValidationMessage = '';
                     this.rucValidationStatus = '';
                     
-                    // Si es factura, solo permitir RUC
-                    if (this.formData.receiptType === '01') {
-                        this.formData.billingDocType = '6';
-                        this.updateBillingFields();
+                    // Aplicar lógica según tipo de documento y comprobante
+                    if (this.formData.docType === 'DNI') {
+                        if (this.formData.receiptType === '03') {
+                            this.formData.billingDocType = '1'; // DNI
+                            this.formData.billingDocNumber = this.formData.docNumber;
+                        } else if (this.formData.receiptType === '01') {
+                            this.formData.billingDocType = '6'; // RUC peruano
+                        }
+                    } else if (this.formData.docType === 'CE' || this.formData.docType === 'PASAPORTE') {
+                        if (this.formData.receiptType === '03') {
+                            this.formData.billingDocType = '7'; // RUC extranjero
+                            this.formData.rucNumber = this.formData.docNumber;
+                            this.formData.businessName = (this.formData.firstName + ' ' + this.formData.lastName).trim();
+                        } else if (this.formData.receiptType === '01') {
+                            this.formData.billingDocType = '6'; // RUC peruano
+                        }
+                    } else {
+                        // Para otros tipos de documento
+                        if (this.formData.receiptType === '01') {
+                            this.formData.billingDocType = '6'; // RUC peruano
+                        }
                     }
+                    
+                    this.updateBillingFields();
                 },
                 
                 updateBillingFields() {
@@ -617,6 +842,35 @@
                     }
                 },
                 
+                // Detectar ID del producto y configurar selección de días
+                detectProductId() {
+                    const productId = this.getProductIdFromURL();
+                    this.formData.productId = productId;
+                    
+                    // Mostrar selección de días para productos 158 y 154
+                    if (productId === '158' || productId === '154') {
+                        this.showDaySelection = true;
+                        this.currentProductPrice = this.productPrices[productId] || 250;
+                    } else {
+                        this.showDaySelection = false;
+                    }
+                },
+                
+                // Actualizar precio total basado en días seleccionados
+                updateTotalPrice() {
+                    // Este método se llama cuando cambia la selección de días
+                    // El precio total se calcula automáticamente en la vista
+                },
+                
+                // Validar que al menos un día esté seleccionado para productos de entrenamiento
+                validateDaySelection() {
+                    if (this.showDaySelection && this.formData.selectedDays.length === 0) {
+                        this.showError(this.t('selectAtLeastOneDay') || 'Debes seleccionar al menos un día de asistencia.');
+                        return false;
+                    }
+                    return true;
+                },
+                
                 // Productos basados en productos.md con precios por categoría
                 products: {
                     convencionista: {
@@ -633,6 +887,12 @@
                 
                 // Función para obtener el precio basado en tipo de inscripción, categoría y moneda
                 getPrice() {
+                    // Para productos de entrenamiento con selección de días
+                    if (this.showDaySelection) {
+                        const totalPrice = this.currentProductPrice * this.formData.selectedDays.length;
+                        return `$${totalPrice.toLocaleString()} USD`;
+                    }
+                    
                     if (!this.formData.inscriptionType || !this.formData.category) return '';
                     
                     const productData = this.getProductData();
@@ -646,6 +906,11 @@
                 
                 // Función para obtener el valor numérico del precio
                 getPriceValue() {
+                    // Para productos de entrenamiento con selección de días
+                    if (this.showDaySelection && this.formData.selectedDays.length > 0) {
+                        return this.currentProductPrice * this.formData.selectedDays.length;
+                    }
+                    
                     if (!this.formData.inscriptionType || !this.formData.category) return 0;
                     
                     const productData = this.getProductData();
@@ -704,7 +969,7 @@
 
                 
                 isFormValid() {
-                    return this.formData.docType && 
+                    const basicValidation = this.formData.docType && 
                            this.formData.docNumber && 
                            this.formData.firstName && 
                            this.formData.lastName && 
@@ -712,6 +977,13 @@
                            this.formData.phone && 
                            this.formData.inscriptionType && 
                            this.formData.category;
+                    
+                    // Si se requiere selección de días, validar que al menos uno esté seleccionado
+                    if (this.showDaySelection) {
+                        return basicValidation && this.formData.selectedDays.length > 0;
+                    }
+                    
+                    return basicValidation;
                 },
                 
                 async processOrder() {
@@ -734,7 +1006,6 @@
                             nombres: this.formData.firstName,
                             apellidos: this.formData.lastName,
                             celular: this.formData.phone,
-                            empresa: this.formData.company,
                             tipo_documento: this.formData.docType,
                             numero_documento: this.formData.docNumber,
                             inscription_type: this.formData.inscriptionType,
@@ -744,6 +1015,13 @@
                             language: this.language,
                             status: 'pending'
                         };
+                        
+                        // Agregar días seleccionados para productos de entrenamiento
+                        if (this.showDaySelection && this.formData.selectedDays.length > 0) {
+                            orderData.selected_days = this.formData.selectedDays;
+                            orderData.days_count = this.formData.selectedDays.length;
+                            orderData.price_per_day = this.currentProductPrice;
+                        }
                         
                         const response = await fetch('/api/v1/orders', {
                             method: 'POST',
@@ -791,7 +1069,6 @@
                         lastName: '',
                         email: '',
                         phone: '',
-                        company: '',
                         inscriptionType: '',
                         category: '',
                         currency: 'USD',

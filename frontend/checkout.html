@@ -1192,8 +1192,8 @@
                             academicType: this.academicType
                         });
                         
-                        console.log('Realizando petición POST a /api/v1/validate-document');
-                        const response = await fetch('/api/v1/validate-document', {
+                        console.log('Realizando petición POST a http://localhost:8000/api/v1/validate-document');
+                        const response = await fetch('http://localhost:8000/api/v1/validate-document', {
                             method: 'POST',
                             body: formData
                         });

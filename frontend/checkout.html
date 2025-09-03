@@ -264,7 +264,9 @@
                 
                 // Inicialización - poblar campos desde URL
                 init() {
+                    console.log('Iniciando Alpine.js component');
                     this.populateFromURL();
+                    console.log('Después de populateFromURL, docType:', this.formData.docType);
                 },
                 
                 // Poblar campos desde parámetros URL
@@ -284,13 +286,26 @@
                     
                     if (urlParams.get('document_type')) {
                         const docTypeCode = urlParams.get('document_type');
+                        console.log('Código recibido:', docTypeCode, 'tipo:', typeof docTypeCode);
+                        
                         // Mapear códigos numéricos a tipos de documento
                         const docTypeMapping = {
                             '1': 'DNI',
                             '4': 'CE', 
                             '7': 'PASAPORTE'
                         };
-                        this.formData.docType = docTypeMapping[docTypeCode] || docTypeCode;
+                        
+                        console.log('Mapeo disponible:', docTypeMapping);
+                        const mappedValue = docTypeMapping[docTypeCode];
+                        console.log('Valor mapeado directo:', mappedValue);
+                        
+                        if (mappedValue) {
+                            this.formData.docType = mappedValue;
+                            console.log('Asignado:', this.formData.docType);
+                        } else {
+                            console.log('No se encontró mapeo para código:', docTypeCode);
+                            this.formData.docType = docTypeCode;
+                        }
                     }
                     
                     if (urlParams.get('document_number')) {

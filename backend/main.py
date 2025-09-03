@@ -280,20 +280,44 @@ async def create_order_link(request: dict):
 
 @app.post("/api/v1/consultar-ruc")
 async def consultar_ruc(request: dict):
-    """Consultar información de RUC"""
+    """Consultar información de RUC usando API de ruc.com.pe"""
+    import httpx
     
     try:
         ruc = request.get("ruc", "")
-        # Simulación de consulta RUC
-        return {
-            "success": True,
-            "data": {
-                "ruc": ruc,
-                "razon_social": f"EMPRESA EJEMPLO {ruc[-3:]} S.A.C.",
-                "estado": "ACTIVO",
-                "direccion": "AV. EJEMPLO 123"
-            }
+        
+        if not ruc or len(ruc) != 11 or not ruc.isdigit():
+            raise HTTPException(status_code=400, detail="RUC debe tener 11 dígitos")
+        
+        # Consultar API real de ruc.com.pe
+        api_url = "https://ruc.com.pe/api/v1/consultas"
+        payload = {
+            "token": "ef5e49a4-f4e1-4928-bb01-064e522a4a85-49610454-2d87-4152-bfe6-2f7cd19f86c1",
+            "ruc": ruc
         }
+        
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(api_url, json=payload)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("success"):
+                    return {
+                        "success": True,
+                        "razonSocial": result.get("nombre_o_razon_social", ""),
+                        "ruc": result.get("ruc", ruc),
+                        "estado": result.get("estado_del_contribuyente", "")
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": "RUC no encontrado"
+                    }
+            else:
+                raise HTTPException(status_code=response.status_code, detail="Error en API externa")
+                
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=408, detail="Timeout consultando RUC")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error consultando RUC: {str(e)}")
 

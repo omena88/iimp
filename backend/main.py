@@ -10,6 +10,7 @@ import json
 import re
 import string
 import random
+from fastapi.responses import RedirectResponse
 
 app = FastAPI(
     title="Sistema de Procesamiento de Órdenes",
@@ -25,6 +26,39 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Base de datos simple en memoria para enlaces cortos
+short_links_db = {}
+
+# Función para crear enlaces cortos con TinyURL
+async def create_tinyurl(long_url: str) -> str:
+    """Crear enlace corto usando TinyURL API"""
+    try:
+        # Intentar usar TinyURL
+        tinyurl_api = f"http://tinyurl.com/api-create.php?url={urllib.parse.quote(long_url)}"
+        response = requests.get(tinyurl_api, timeout=5)
+        
+        if response.status_code == 200 and response.text.startswith('http'):
+            return response.text.strip()
+        else:
+            # Si TinyURL falla, crear enlace corto local como respaldo
+            return create_local_shortlink(long_url)
+            
+    except Exception as e:
+        print(f"Error con TinyURL: {e}")
+        # Si hay error, crear enlace corto local como respaldo
+        return create_local_shortlink(long_url)
+
+def create_local_shortlink(long_url: str) -> str:
+    """Crear enlace corto local como respaldo"""
+    short_code = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+    base_url = "https://apis-iimp-web.di8b44.easypanel.host"
+    short_url = f"{base_url}/c/{short_code}"
+    
+    # Guardar en base de datos local
+    short_links_db[short_code] = long_url
+    
+    return short_url
 
 # Modelos Pydantic
 class OrderStatus(str, Enum):
@@ -200,9 +234,8 @@ async def create_order_link(request: dict):
         base_url = "https://apis-iimp-web.di8b44.easypanel.host"
         long_url = f"{base_url}/checkout.html?{query_string}"
         
-        # Generar shortlink simple
-        short_code = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-        short_url = f"{base_url}/c/{short_code}"
+        # Generar shortlink usando TinyURL
+        short_url = await create_tinyurl(long_url)
         
         return {
             "success": True,
@@ -253,6 +286,21 @@ async def check_inscriptions(request: dict):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error verificando inscripciones: {str(e)}")
+
+@app.get("/c/{short_code}")
+async def redirect_short_link(short_code: str):
+    """Redireccionar enlaces cortos locales"""
+    
+    try:
+        # Buscar el enlace corto en la base de datos local
+        if short_code in short_links_db:
+            long_url = short_links_db[short_code]
+            return RedirectResponse(url=long_url, status_code=302)
+        else:
+            raise HTTPException(status_code=404, detail="Enlace corto no encontrado")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error procesando redirección: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

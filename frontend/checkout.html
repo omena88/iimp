@@ -262,6 +262,78 @@
                 existingInscriptions: [],
                 isLoading: false,
                 
+                // Inicialización - poblar campos desde URL
+                init() {
+                    this.populateFromURL();
+                },
+                
+                // Poblar campos desde parámetros URL
+                populateFromURL() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    
+                    // Mapear parámetros URL a campos del formulario
+                    const paramMapping = {
+                        'name': 'firstName',
+                        'participant_name': 'firstName', 
+                        'email': 'email',
+                        'participant_email': 'email',
+                        'document_type': 'docType',
+                        'document_number': 'docNumber',
+                        'phone': 'phone',
+                        'company': 'company',
+                        'inscription_type': 'inscriptionType',
+                        'product_id': 'productId',
+                        'quantity': 'quantity',
+                        'language': 'language'
+                    };
+                    
+                    // Poblar campos del formulario
+                    for (const [urlParam, formField] of Object.entries(paramMapping)) {
+                        const value = urlParams.get(urlParam);
+                        if (value) {
+                            if (formField === 'firstName') {
+                                // Si viene 'name' completo, dividir en nombres y apellidos
+                                if (urlParam === 'name' || urlParam === 'participant_name') {
+                                    const nameParts = decodeURIComponent(value).split(' ');
+                                    this.formData.firstName = nameParts[0] || '';
+                                    this.formData.lastName = nameParts.slice(1).join(' ') || '';
+                                }
+                            } else if (formField === 'language') {
+                                this.language = value;
+                            } else if (this.formData.hasOwnProperty(formField)) {
+                                this.formData[formField] = decodeURIComponent(value);
+                            }
+                        }
+                    }
+                    
+                    // Mapear product_id a inscription_type y category
+                    const productId = urlParams.get('product_id');
+                    if (productId) {
+                        this.setInscriptionFromProductId(productId);
+                    }
+                },
+                
+                // Configurar tipo de inscripción y categoría basado en product_id
+                setInscriptionFromProductId(productId) {
+                    // Buscar en productos de convencionista
+                    for (const [id, data] of Object.entries(this.products.convencionista)) {
+                        if (id === productId) {
+                            this.formData.inscriptionType = 'convencionista';
+                            this.formData.category = data.category;
+                            return;
+                        }
+                    }
+                    
+                    // Buscar en productos de extemin
+                    for (const [id, data] of Object.entries(this.products.extemin)) {
+                        if (id === productId) {
+                            this.formData.inscriptionType = 'extemin';
+                            this.formData.category = data.category;
+                            return;
+                        }
+                    }
+                },
+                
                 async checkExistingInscriptions() {
                     if (!this.formData.docType || !this.formData.docNumber) {
                         this.existingInscriptions = [];

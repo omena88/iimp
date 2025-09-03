@@ -460,7 +460,7 @@
                     isLoading: false,
                     // Campos de facturación
                     receiptType: '03', // Boleta por defecto
-                    billingDocType: '',
+                    billingDocType: '1', // DNI peruano por defecto
                     rucNumber: '',
                     businessName: '',
                     billingDocNumber: '',
@@ -481,12 +481,22 @@
                     '158': 250,
                     '154': 700
                 },
+                // Variables para validación documental
+                showDocumentValidationModal: false,
+                documentValidationType: '', // 'academic' o 'sme'
+                academicType: '', // 'student' o 'teacher'
+                documentValidationStatus: '', // 'validating', 'success', 'error'
+                documentValidationMessage: '',
+                documentValidated: false,
+                uploadedFile: null,
                 
                 // Inicialización - poblar campos desde URL
                 init() {
                     console.log('Iniciando Alpine.js component');
                     this.populateFromURL();
                     this.detectProductId();
+                    // Ejecutar lógica de facturación después de poblar datos
+                    this.handleDocTypeChange();
                     console.log('Después de populateFromURL, docType:', this.formData.docType);
                 },
                 
@@ -627,12 +637,22 @@
                             this.showError(this.translations[this.currentLanguage].academicPeruOnly || 'Los productos académicos están disponibles solo para peruanos con DNI.');
                             return false;
                         }
+                        // Si es DNI, verificar si necesita validación documental
+                        if (!this.documentValidated) {
+                            this.showAcademicValidationModal(productId);
+                            return false;
+                        }
                     }
                     
                     if (productId === '150') {
                         // Producto SME: solo peruanos (DNI)
                         if (this.formData.docType !== 'DNI') {
                             this.showError(this.translations[this.currentLanguage].smePeruOnly || 'El producto SME está disponible solo para peruanos con DNI.');
+                            return false;
+                        }
+                        // Si es DNI, verificar si necesita validación documental
+                        if (!this.documentValidated) {
+                            this.showSMEValidationModal();
                             return false;
                         }
                     }
@@ -1073,6 +1093,99 @@
                     }
                 },
                 
+                // Funciones para validación documental
+                showAcademicValidationModal(productId) {
+                    this.documentValidationType = 'academic';
+                    this.academicType = productId === '151' ? 'teacher' : 'student';
+                    this.showDocumentValidationModal = true;
+                    this.documentValidationStatus = '';
+                    this.documentValidationMessage = '';
+                },
+                
+                showSMEValidationModal() {
+                    this.documentValidationType = 'sme';
+                    this.showDocumentValidationModal = true;
+                    this.documentValidationStatus = '';
+                    this.documentValidationMessage = '';
+                },
+                
+                closeDocumentValidationModal() {
+                    this.showDocumentValidationModal = false;
+                    this.uploadedFile = null;
+                    this.documentValidationStatus = '';
+                    this.documentValidationMessage = '';
+                },
+                
+                handleFileUpload(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        // Validar tipo de archivo
+                        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+                        if (!allowedTypes.includes(file.type)) {
+                            this.showError('Solo se permiten archivos JPG, PNG o PDF.');
+                            return;
+                        }
+                        
+                        // Validar tamaño (máximo 5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                            this.showError('El archivo no debe superar los 5MB.');
+                            return;
+                        }
+                        
+                        this.uploadedFile = file;
+                    }
+                },
+                
+                async validateDocument() {
+                    if (!this.uploadedFile) {
+                        this.showError('Debe seleccionar un archivo.');
+                        return;
+                    }
+                    
+                    if (!this.formData.firstName || !this.formData.lastName) {
+                        this.showError('Debe completar los campos de nombre y apellido.');
+                        return;
+                    }
+                    
+                    this.documentValidationStatus = 'validating';
+                    this.documentValidationMessage = this.language === 'es' ? 'Validando documento...' : 'Validating document...';
+                    
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', this.uploadedFile);
+                        formData.append('firstName', this.formData.firstName);
+                        formData.append('lastName', this.formData.lastName);
+                        formData.append('validationType', this.documentValidationType);
+                        if (this.documentValidationType === 'academic') {
+                            formData.append('academicType', this.academicType);
+                        }
+                        
+                        const response = await fetch('/api/v1/validate-document', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.valid) {
+                            this.documentValidationStatus = 'success';
+                            this.documentValidationMessage = this.language === 'es' ? 'Documento validado exitosamente.' : 'Document validated successfully.';
+                            this.documentValidated = true;
+                            
+                            setTimeout(() => {
+                                this.closeDocumentValidationModal();
+                            }, 2000);
+                        } else {
+                            this.documentValidationStatus = 'error';
+                            this.documentValidationMessage = result.reason || (this.language === 'es' ? 'Error en la validación del documento.' : 'Document validation error.');
+                        }
+                    } catch (error) {
+                        console.error('Error validating document:', error);
+                        this.documentValidationStatus = 'error';
+                        this.documentValidationMessage = this.language === 'es' ? 'Error de conexión. Intente nuevamente.' : 'Connection error. Please try again.';
+                    }
+                },
+                
                 resetForm() {
                     this.formData = {
                         docType: '',
@@ -1097,5 +1210,61 @@
             }
         }
     </script>
+
+    <!-- Modal de Validación Documental -->
+    <div x-show="showDocumentValidationModal" class="modal-overlay" @click="closeDocumentValidationModal">
+        <div class="modal-content" @click.stop>
+            <div class="modal-header">
+                <h3 x-show="documentValidationType === 'academic'">
+                    <span x-text="language === 'es' ? 'Validación de Documento Académico' : 'Academic Document Validation'"></span>
+                    <span x-show="academicType === 'teacher'" x-text="'(' + (language === 'es' ? 'Docente' : 'Teacher') + ')'"></span>
+                    <span x-show="academicType === 'student'" x-text="'(' + (language === 'es' ? 'Estudiante' : 'Student') + ')'"></span>
+                </h3>
+                <h3 x-show="documentValidationType === 'sme'" x-text="language === 'es' ? 'Validación de Documento SME' : 'SME Document Validation'"></h3>
+                <button class="close-btn" @click="closeDocumentValidationModal">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="validation-info">
+                    <p x-show="documentValidationType === 'academic' && academicType === 'teacher'" x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición de docente (constancia de trabajo, resolución, etc.)' : 'Please upload your document that proves your teaching status (work certificate, resolution, etc.)'"></p>
+                    <p x-show="documentValidationType === 'academic' && academicType === 'student'" x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición de estudiante (constancia de estudios, carnet universitario, etc.)' : 'Please upload your document that proves your student status (study certificate, university ID, etc.)'"></p>
+                    <p x-show="documentValidationType === 'sme'" x-text="language === 'es' ? 'Por favor, suba su documento que acredite su condición de SME (pequeña y mediana empresa)' : 'Please upload your document that proves your SME (small and medium enterprise) status'"></p>
+                </div>
+                
+                <div class="file-upload-section">
+                    <label class="file-upload-label">
+                        <input type="file" @change="handleFileUpload" accept=".jpg,.jpeg,.png,.pdf" style="display: none;">
+                        <div class="file-upload-area">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span x-show="!uploadedFile" x-text="language === 'es' ? 'Haga clic para seleccionar archivo' : 'Click to select file'"></span>
+                            <span x-show="uploadedFile" class="file-selected" x-text="uploadedFile ? uploadedFile.name : ''"></span>
+                            <small x-text="language === 'es' ? 'Formatos: JPG, PNG, PDF (máx. 5MB)' : 'Formats: JPG, PNG, PDF (max. 5MB)'"></small>
+                        </div>
+                    </label>
+                </div>
+                
+                <div x-show="documentValidationStatus" class="validation-status">
+                    <div x-show="documentValidationStatus === 'validating'" class="status-validating">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span x-text="documentValidationMessage"></span>
+                    </div>
+                    <div x-show="documentValidationStatus === 'success'" class="status-success">
+                        <i class="fas fa-check-circle"></i>
+                        <span x-text="documentValidationMessage"></span>
+                    </div>
+                    <div x-show="documentValidationStatus === 'error'" class="status-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span x-text="documentValidationMessage"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @click="closeDocumentValidationModal" x-text="language === 'es' ? 'Cancelar' : 'Cancel'"></button>
+                <button class="btn btn-primary" @click="validateDocument" :disabled="!uploadedFile || documentValidationStatus === 'validating'" x-text="language === 'es' ? 'Validar Documento' : 'Validate Document'"></button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

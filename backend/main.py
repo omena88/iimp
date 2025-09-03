@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict, Any
@@ -10,6 +10,7 @@ import json
 import re
 import string
 import random
+import asyncio
 from fastapi.responses import RedirectResponse
 
 app = FastAPI(
@@ -348,6 +349,91 @@ async def redirect_short_link(short_code: str):
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error procesando redirección: {str(e)}")
+
+# Endpoint para validación documental con Gemini
+@app.post("/api/v1/validate-document")
+async def validate_document(
+    file: UploadFile = File(...),
+    firstName: str = Form(...),
+    lastName: str = Form(...),
+    validationType: str = Form(...),
+    academicType: Optional[str] = Form(None)
+):
+    """Validar documento usando Gemini AI"""
+    try:
+        # Validar tipo de archivo
+        allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
+        if file.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail="Tipo de archivo no permitido")
+        
+        # Validar tamaño (máximo 5MB)
+        file_content = await file.read()
+        if len(file_content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="El archivo es demasiado grande")
+        
+        # Simular validación con Gemini (aquí iría la integración real)
+        # Por ahora, implementamos una validación simulada
+        validation_result = await simulate_gemini_validation(
+            file_content, 
+            firstName, 
+            lastName, 
+            validationType, 
+            academicType
+        )
+        
+        return validation_result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en validación: {str(e)}")
+
+async def simulate_gemini_validation(
+    file_content: bytes,
+    first_name: str,
+    last_name: str,
+    validation_type: str,
+    academic_type: Optional[str] = None
+) -> Dict[str, Any]:
+    """Simular validación con Gemini AI"""
+    
+    # Simular procesamiento del documento
+    import time
+    import random
+    
+    # Simular tiempo de procesamiento
+    await asyncio.sleep(2)
+    
+    # Simular resultado de validación (85% de éxito)
+    is_valid = random.random() > 0.15
+    
+    if is_valid:
+        if validation_type == 'academic':
+            if academic_type == 'teacher':
+                message = f"Documento de docente validado para {first_name} {last_name}"
+            else:
+                message = f"Documento de estudiante validado para {first_name} {last_name}"
+        else:
+            message = f"Documento SME validado para {first_name} {last_name}"
+            
+        return {
+            "valid": True,
+            "message": message,
+            "confidence": round(random.uniform(0.85, 0.98), 2)
+        }
+    else:
+        reasons = [
+            "El documento no es legible",
+            "El nombre en el documento no coincide",
+            "El documento no corresponde al tipo solicitado",
+            "La calidad de la imagen es insuficiente"
+        ]
+        
+        return {
+            "valid": False,
+            "reason": random.choice(reasons),
+            "confidence": round(random.uniform(0.60, 0.84), 2)
+        }
 
 if __name__ == "__main__":
     import uvicorn

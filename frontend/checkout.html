@@ -1227,8 +1227,17 @@
                             academicType: this.academicType
                         });
                         
-                        console.log('Realizando petición POST a http://localhost:8000/api/v1/validate-document');
-                        const response = await fetch('http://localhost:8000/api/v1/validate-document', {
+                        // Detectar URL del backend automáticamente
+                        const getApiBaseUrl = () => {
+                            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                                return 'http://localhost:8000/api/v1';
+                            }
+                            return `${window.location.protocol}//${window.location.host}/api/v1`;
+                        };
+                        
+                        const apiUrl = `${getApiBaseUrl()}/validate-document`;
+                        console.log('Realizando petición POST a', apiUrl);
+                        const response = await fetch(apiUrl, {
                             method: 'POST',
                             body: formData
                         });

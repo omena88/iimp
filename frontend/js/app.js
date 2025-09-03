@@ -1,5 +1,14 @@
-// Configuración de la API
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+// Configuración de la API - detecta automáticamente el entorno
+const getApiBaseUrl = () => {
+    // Si estamos en localhost, usar el puerto 8000
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:8000/api/v1';
+    }
+    // En producción, usar URL relativa al dominio actual
+    return `${window.location.protocol}//${window.location.host}/api/v1`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Función principal de Alpine.js
 function orderApp() {

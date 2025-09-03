@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PERUMIN 37 - Sistema de Gestión de Órdenes</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Preline UI -->
+    <link rel="stylesheet" href="https://preline.co/assets/css/main.min.css">
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'perumin': '#004F59',
+                        'perumin-light': '#006B7A',
+                        'perumin-dark': '#003A42',
+                        primary: '#004F59',
+                        secondary: '#64748b'
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-inter" x-data="orderApp()">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <img src="assets/LOGO_PERUMIN_37.png" alt="PERUMIN 37" class="h-10 w-auto mr-3">
+                    <div>
+                        <h1 class="text-xl font-semibold text-perumin">PERUMIN 37</h1>
+                        <p class="text-sm text-gray-600">Sistema de Gestión de Órdenes</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button 
+                        @click="showCreateModal = true"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-perumin hover:bg-perumin-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-perumin">
+                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Nueva Orden
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Órdenes</dt>
+                                <dd class="text-lg font-medium text-gray-900" x-text="orders.length">0</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Pendientes</dt>
+                                <dd class="text-lg font-medium text-gray-900" x-text="orders.filter(o => o.status === 'pending').length">0</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Completadas</dt>
+                                <dd class="text-lg font-medium text-gray-900" x-text="orders.filter(o => o.status === 'completed').length">0</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Ventas</dt>
+                                <dd class="text-lg font-medium text-gray-900" x-text="'$' + orders.reduce((sum, o) => sum + o.total, 0).toFixed(2)">$0.00</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Órdenes Recientes</h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">Lista de todas las órdenes en el sistema</p>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="order in orders" :key="order.id">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="order.id"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="order.customer_name"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="order.product_name"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="order.quantity"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="'$' + order.total.toFixed(2)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                                          :class="{
+                                              'bg-yellow-100 text-yellow-800': order.status === 'pending',
+                                              'bg-blue-100 text-blue-800': order.status === 'processing',
+                                              'bg-green-100 text-green-800': order.status === 'completed',
+                                              'bg-red-100 text-red-800': order.status === 'cancelled'
+                                          }"
+                                          x-text="order.status"></span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button @click="editOrder(order)" class="text-indigo-600 hover:text-indigo-900 mr-3">Editar</button>
+                                    <button @click="deleteOrder(order.id)" class="text-red-600 hover:text-red-900">Eliminar</button>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="orders.length === 0">
+                            <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                                No hay órdenes registradas
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Create Order Modal -->
+    <div x-show="showCreateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" x-transition>
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Nueva Orden</h3>
+                <form @submit.prevent="createOrder()">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Cliente</label>
+                        <input type="text" x-model="newOrder.customer_name" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Producto</label>
+                        <input type="text" x-model="newOrder.product_name" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
+                        <input type="number" x-model="newOrder.quantity" required min="1"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio Unitario</label>
+                        <input type="number" x-model="newOrder.price" required min="0" step="0.01"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notas (Opcional)</label>
+                        <textarea x-model="newOrder.notes" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" @click="showCreateModal = false"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 text-sm font-medium text-white bg-perumin rounded-md hover:bg-perumin-dark">
+                            Crear Orden
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preline UI JS -->
+    <script src="https://preline.co/assets/js/hs-ui.bundle.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="js/app.js"></script>
+</body>
+</html>

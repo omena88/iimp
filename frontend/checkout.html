@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - IIMP</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'perumin': '#004F59',
+                        'perumin-light': '#006B7A',
+                        'perumin-dark': '#003A42'
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-inter" x-data="checkoutApp()">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center justify-between w-full">
+                    <div class="flex items-center space-x-3">
+                        <img src="assets/LOGO_PERUMIN_37.png" alt="PERUMIN 37" class="h-12 w-auto">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Formulario Principal -->
+            <div class="lg:col-span-2">
+                <!-- Inscripciones Existentes -->
+                <div x-show="existingInscriptions.length > 0" class="mb-6 border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden">
+                    <div class="flex items-center gap-3 px-4 py-3 bg-perumin text-white">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <strong class="text-sm font-medium">Inscripciones Existentes</strong>
+                    </div>
+                    <div class="p-4">
+                        <ul class="space-y-2">
+                            <template x-for="inscription in existingInscriptions" :key="inscription">
+                                <li class="flex items-center text-sm text-gray-700">
+                                    <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span x-text="inscription"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Datos Personales -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+                    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                        <h2 class="text-lg font-semibold text-perumin" x-text="t('personalData')">Datos Personales</h2>
+                        <div class="flex items-center space-x-2">
+                            <button 
+                                @click="setLanguage('es')" 
+                                :class="language === 'es' ? 'bg-perumin text-white' : 'bg-gray-200 text-gray-700'"
+                                class="px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1">
+                                <i class="fi fi-es w-4 h-4"></i>
+                                <span>ES</span>
+                            </button>
+                            <button 
+                                @click="setLanguage('en')" 
+                                :class="language === 'en' ? 'bg-perumin text-white' : 'bg-gray-200 text-gray-700'"
+                                class="px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center space-x-1">
+                                <i class="fi fi-us w-4 h-4"></i>
+                                <span>EN</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('docType')">Tipo de Documento</label>
+                                <select x-model="formData.docType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin">
+                                    <option value="" x-text="t('selectDocType')">Seleccionar...</option>
+                                    <option value="DNI">DNI</option>
+                                    <option value="CE">Carnet de Extranjería</option>
+                                    <option value="PASAPORTE">Pasaporte</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('docNumber')">Número de Documento</label>
+                                <input type="text" x-model="formData.docNumber" @input="checkExistingInscriptions()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterDocNumber')">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('firstName')">Nombres</label>
+                                <input type="text" x-model="formData.firstName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterFirstName')">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('lastName')">Apellidos</label>
+                                <input type="text" x-model="formData.lastName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterLastName')">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('email')">Email</label>
+                                <input type="email" x-model="formData.email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterEmail')">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('phone')">Teléfono</label>
+                                <input type="tel" x-model="formData.phone" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterPhone')">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" x-text="t('company')">Empresa/Institución</label>
+                            <input type="text" x-model="formData.company" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-perumin focus:border-perumin" :placeholder="t('enterCompany')">
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <!-- Resumen de Compra -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-8">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-perumin" x-text="t('purchaseSummary')">Resumen de Compra</h2>
+                    </div>
+                    <div class="p-6">
+                        <div x-show="formData.inscriptionType" class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600" x-text="language === 'es' ? 'Tipo de Inscripción:' : 'Inscription Type:'">Tipo de Inscripción:</span>
+                                <span class="font-medium capitalize" x-text="formData.inscriptionType ? t(formData.inscriptionType) : ''"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600" x-text="t('category') + ':'">Categoría:</span>
+                                <span class="font-medium" x-text="formData.category || (language === 'es' ? 'No seleccionada' : 'Not selected')"></span>
+                            </div>
+                            <div class="border-t border-gray-200 pt-4">
+                                <div class="flex justify-between items-center text-lg font-semibold">
+                                    <span x-text="t('total') + ':'">Total:</span>
+                                    <span class="text-perumin" x-text="getPrice()"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div x-show="!formData.inscriptionType" class="text-center text-gray-500 py-8">
+                            <p x-text="language === 'es' ? 'Seleccione un tipo de inscripción para ver el resumen' : 'Select an inscription type to see the summary'">Seleccione un tipo de inscripción para ver el resumen</p>
+                        </div>
+
+                        <button @click="processOrder()" :disabled="!isFormValid() || isLoading" class="w-full mt-6 bg-perumin text-white py-3 px-4 rounded-lg font-medium hover:bg-perumin-dark disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
+                            <span x-show="!isLoading" x-text="t('processInscription')">Procesar Inscripción</span>
+                            <span x-show="isLoading" class="flex items-center justify-center">
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span x-text="t('processing')">Procesando...</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function checkoutApp() {
+            return {
+                language: 'es',
+                translations: {
+                    es: {
+                        personalData: 'Datos Personales',
+                        docType: 'Tipo de Documento',
+                        docNumber: 'Número de Documento',
+                        firstName: 'Nombres',
+                        lastName: 'Apellidos',
+                        email: 'Correo Electrónico',
+                        phone: 'Teléfono',
+                        company: 'Empresa',
+                        inscriptionType: 'Tipo de Inscripción',
+                        category: 'Categoría',
+                        currency: 'Moneda',
+                        convencionista: 'Convencionista',
+                        extemin: 'Extemin',
+                        purchaseSummary: 'Resumen de Compra',
+                        total: 'Total',
+                        processInscription: 'Procesar Inscripción',
+                        processing: 'Procesando...',
+                        selectDocType: 'Selecciona tipo de documento',
+                        selectCategory: 'Selecciona categoría',
+                        enterDocNumber: 'Ingresa número de documento',
+                        enterFirstName: 'Ingresa nombres',
+                        enterLastName: 'Ingresa apellidos',
+                        enterEmail: 'Ingresa correo electrónico',
+                        enterPhone: 'Ingresa teléfono',
+                        enterCompany: 'Ingresa empresa (opcional)',
+                        documentType: 'Tipo de Documento',
+                        documentNumber: 'Número de Documento'
+                    },
+                    en: {
+                        personalData: 'Personal Data',
+                        docType: 'Document Type',
+                        docNumber: 'Document Number',
+                        firstName: 'First Name',
+                        lastName: 'Last Name',
+                        email: 'Email',
+                        phone: 'Phone',
+                        company: 'Company',
+                        inscriptionType: 'Inscription Type',
+                        category: 'Category',
+                        currency: 'Currency',
+                        convencionista: 'Conventionist',
+                        extemin: 'Extemin',
+                        purchaseSummary: 'Purchase Summary',
+                        total: 'Total',
+                        processInscription: 'Process Inscription',
+                        processing: 'Processing...',
+                        selectDocType: 'Select document type',
+                        selectCategory: 'Select category',
+                        enterDocNumber: 'Enter document number',
+                        enterFirstName: 'Enter first name',
+                        enterLastName: 'Enter last name',
+                        enterEmail: 'Enter email',
+                        enterPhone: 'Enter phone',
+                        enterCompany: 'Enter company (optional)',
+                        documentType: 'Document Type',
+                        documentNumber: 'Document Number'
+                    }
+                },
+                formData: {
+                    docType: '',
+                    docNumber: '',
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    phone: '',
+                    company: '',
+                    inscriptionType: '',
+                    category: '',
+                    currency: 'USD',
+                    isLoading: false
+                },
+                existingInscriptions: [],
+                isLoading: false,
+                
+                async checkExistingInscriptions() {
+                    if (!this.formData.docType || !this.formData.docNumber) {
+                        this.existingInscriptions = [];
+                        return;
+                    }
+                    
+                    try {
+                        // Mapear tipos de documento según la lógica del PHP
+                        const docTypeMapping = {
+                            'DNI': '1',
+                            'CE': '4',
+                            'PASAPORTE': '7'
+                        };
+                        
+                        const mappedDocType = docTypeMapping[this.formData.docType] || this.formData.docType;
+                        
+                        const requestData = {
+                            TipEvCod: 2,
+                            EvenCod: 16,
+                            TipoDocumento: mappedDocType,
+                            NumeroDocumento: this.formData.docNumber
+                        };
+                        
+                        const response = await fetch('/api/v1/check-inscriptions', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(requestData)
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            this.existingInscriptions = result.inscriptions || [];
+                        } else {
+                            this.existingInscriptions = [];
+                        }
+                    } catch (error) {
+                        console.error('Error checking inscriptions:', error);
+                        this.existingInscriptions = [];
+                    }
+                },
+                
+                // Productos basados en productos.md con precios por categoría
+                products: {
+                    convencionista: {
+                        150: { category: 'ASOCIADO_SME', price_usd: 1700, price_pen: 6290 },
+                        151: { category: 'DOCENTE', price_usd: 400, price_pen: 1480 },
+                        152: { category: 'ESTUDIANTE', price_usd: 250, price_pen: 925 },
+                        154: { category: 'NO_ASOCIADO', price_usd: 1900, price_pen: 7030 },
+                        155: { category: 'ASOCIADO_ACTIVO', price_usd: 1700, price_pen: 6290 }
+                    },
+                    extemin: {
+                        158: { category: 'WEEK', price_usd: 790, price_pen: 2924 }
+                    }
+                },
+                
+                // Función para obtener el precio basado en tipo de inscripción, categoría y moneda
+                getPrice() {
+                    if (!this.formData.inscriptionType || !this.formData.category) return '';
+                    
+                    const productData = this.getProductData();
+                    if (!productData) return '';
+                    
+                    const price = this.formData.currency === 'USD' ? productData.price_usd : productData.price_pen;
+                    const symbol = this.formData.currency === 'USD' ? '$' : 'S/';
+                    
+                    return `${symbol}${price.toLocaleString()} ${this.formData.currency}`;
+                },
+                
+                // Función para obtener el valor numérico del precio
+                getPriceValue() {
+                    if (!this.formData.inscriptionType || !this.formData.category) return 0;
+                    
+                    const productData = this.getProductData();
+                    if (!productData) return 0;
+                    
+                    return this.formData.currency === 'USD' ? productData.price_usd : productData.price_pen;
+                },
+                
+                // Función para obtener los datos del producto basado en tipo y categoría
+                getProductData() {
+                    const typeProducts = this.products[this.formData.inscriptionType];
+                    if (!typeProducts) return null;
+                    
+                    // Buscar el producto que coincida con la categoría seleccionada
+                    for (const [productId, productData] of Object.entries(typeProducts)) {
+                        if (productData.category === this.formData.category) {
+                            return { ...productData, id: productId };
+                        }
+                    }
+                    
+                    return null;
+                },
+                
+                // Función para obtener el ID del producto
+                getProductId() {
+                    const productData = this.getProductData();
+                    return productData ? productData.id : null;
+                },
+                
+                // Función para mostrar precio de convencionista basado en categoría
+                getConvencionistaPrice() {
+                    if (!this.formData.category) {
+                        // Mostrar rango de precios si no hay categoría seleccionada
+                        return this.formData.currency === 'USD' ? '$250 - $1,900 USD' : 'S/925 - S/7,030 PEN';
+                    }
+                    
+                    const typeProducts = this.products.convencionista;
+                    for (const [productId, productData] of Object.entries(typeProducts)) {
+                        if (productData.category === this.formData.category) {
+                            const price = this.formData.currency === 'USD' ? productData.price_usd : productData.price_pen;
+                            const symbol = this.formData.currency === 'USD' ? '$' : 'S/';
+                            return `${symbol}${price.toLocaleString()} ${this.formData.currency}`;
+                        }
+                    }
+                    
+                    return this.formData.currency === 'USD' ? '$250 - $1,900 USD' : 'S/925 - S/7,030 PEN';
+                },
+                
+                // Función para mostrar precio de extemin
+                getExteminPrice() {
+                    const price = this.formData.currency === 'USD' ? 790 : 2924;
+                    const symbol = this.formData.currency === 'USD' ? '$' : 'S/';
+                    return `${symbol}${price.toLocaleString()} ${this.formData.currency}`;
+                },
+                
+
+                
+                isFormValid() {
+                    return this.formData.docType && 
+                           this.formData.docNumber && 
+                           this.formData.firstName && 
+                           this.formData.lastName && 
+                           this.formData.email && 
+                           this.formData.phone && 
+                           this.formData.inscriptionType && 
+                           this.formData.category;
+                },
+                
+                async processOrder() {
+                    if (!this.isFormValid()) {
+                        alert('Por favor complete todos los campos requeridos');
+                        return;
+                    }
+                    
+                    this.isLoading = true;
+                    
+                    try {
+                        const productId = this.getProductId();
+                        if (!productId) {
+                            throw new Error('No se pudo determinar el producto');
+                        }
+                        
+                        const orderData = {
+                            product_id: productId,
+                            email: this.formData.email,
+                            nombres: this.formData.firstName,
+                            apellidos: this.formData.lastName,
+                            celular: this.formData.phone,
+                            empresa: this.formData.company,
+                            tipo_documento: this.formData.docType,
+                            numero_documento: this.formData.docNumber,
+                            inscription_type: this.formData.inscriptionType,
+                            category: this.formData.category,
+                            currency: this.formData.currency,
+                            total_amount: this.getPriceValue(),
+                            language: this.language,
+                            status: 'pending'
+                        };
+                        
+                        const response = await fetch('/api/v1/orders', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(orderData)
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            const successMessage = this.language === 'es' ? '¡Inscripción enviada exitosamente!' : 'Inscription sent successfully!';
+                            alert(`${successMessage} ID de orden: ${result.id}`);
+                            // Aquí se redirigiría a una página de confirmación
+                            window.location.href = 'index.html';
+                        } else {
+                            const error = await response.json();
+                            const errorMessage = this.language === 'es' ? 'Error al procesar la inscripción' : 'Error processing inscription';
+                            alert(`${errorMessage}: ${error.detail || 'Error desconocido'}`);
+                        }
+                    } catch (error) {
+                        console.error('Error al enviar formulario:', error);
+                        const errorMessage = this.language === 'es' ? 'Error de conexión. Por favor, intente nuevamente.' : 'Connection error. Please try again.';
+                        alert(errorMessage);
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+                
+                resetForm() {
+                    this.formData = {
+                        docType: '',
+                        docNumber: '',
+                        firstName: '',
+                        lastName: '',
+                        email: '',
+                        phone: '',
+                        company: '',
+                        inscriptionType: '',
+                        category: '',
+                        currency: 'USD',
+                        isLoading: false
+                    };
+                    this.existingInscriptions = [];
+                },
+                setLanguage(lang) {
+                    this.language = lang;
+                },
+                t(key) {
+                    return this.translations[this.language][key] || key;
+                }
+            }
+        }
+    </script>
+</body>
+</html>

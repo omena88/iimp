@@ -1,0 +1,38 @@
+# Carpeta de inspiración
+inspiracion/
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Archivos de entorno
+.env
+.venv
+env/
+venv/
+
+# Archivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Archivos temporales
+*.tmp
+*.temp

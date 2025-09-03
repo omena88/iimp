@@ -26,7 +26,7 @@
 			"response": []
 		},
 		{
-			"name": "2. Generate Shortlink",
+			"name": "2. Create Order Link",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -37,7 +37,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"product_id\": 154,\n  \"product_name\": \"Curso PERUMIN 37\",\n  \"price\": 500.00,\n  \"currency\": \"USD\",\n  \"customer_data\": {\n    \"name\": \"Juan Pérez\",\n    \"email\": \"juan@example.com\",\n    \"phone\": \"+51987654321\"\n  },\n  \"training_days\": [\"2024-09-23\", \"2024-09-24\"],\n  \"language\": \"es\"\n}",
+					"raw": "{\n  \"participant_name\": \"Juan Pérez\",\n  \"participant_email\": \"juan@example.com\",\n  \"document_type\": \"DNI\",\n  \"document_number\": \"12345678\",\n  \"inscription_type\": \"individual\",\n  \"product_id\": \"154\",\n  \"quantity\": 1,\n  \"phone\": \"+51987654321\",\n  \"company\": \"Mi Empresa SAC\",\n  \"ruc\": \"20123456789\",\n  \"language\": \"es\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -45,17 +45,17 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}/api/v1/generate-shortlink",
+					"raw": "{{base_url}}/api/v1/create-order-link",
 					"host": [
 						"{{base_url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"generate-shortlink"
+						"create-order-link"
 					]
 				},
-				"description": "Generar un shortlink para el checkout de un producto"
+				"description": "Crear enlace de pago personalizado para el checkout"
 			},
 			"response": []
 		},

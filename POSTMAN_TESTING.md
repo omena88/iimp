@@ -20,8 +20,8 @@ https://apis-iimp-web.di8b44.easypanel.host
 ```
 
 ### 2. Generar Shortlink de Checkout
-**POST** `/api/v1/generate-shortlink`
-- **URL Completa**: `https://apis-iimp-web.di8b44.easypanel.host/api/v1/generate-shortlink`
+**POST** `/api/v1/create-order-link`
+- **URL Completa**: `https://apis-iimp-web.di8b44.easypanel.host/api/v1/create-order-link`
 - **Método**: POST
 - **Headers**:
   ```
@@ -30,16 +30,16 @@ https://apis-iimp-web.di8b44.easypanel.host
 - **Body (JSON)**:
 ```json
 {
-  "product_id": 154,
-  "product_name": "Curso PERUMIN 37",
-  "price": 500.00,
-  "currency": "USD",
-  "customer_data": {
-    "name": "Juan Pérez",
-    "email": "juan@example.com",
-    "phone": "+51987654321"
-  },
-  "training_days": ["2024-09-23", "2024-09-24"],
+  "participant_name": "Juan Pérez",
+  "participant_email": "juan@example.com",
+  "document_type": "DNI",
+  "document_number": "12345678",
+  "inscription_type": "individual",
+  "product_id": "154",
+  "quantity": 1,
+  "phone": "+51987654321",
+  "company": "Mi Empresa SAC",
+  "ruc": "20123456789",
   "language": "es"
 }
 ```

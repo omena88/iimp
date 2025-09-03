@@ -302,6 +302,12 @@
                         if (mappedValue) {
                             this.formData.docType = mappedValue;
                             console.log('Asignado:', this.formData.docType);
+                            // Verificar después de un momento si el select se actualizó
+                            setTimeout(() => {
+                                console.log('Verificación después de timeout - docType:', this.formData.docType);
+                                const selectElement = document.querySelector('select[x-model="formData.docType"]');
+                                console.log('Valor del select element:', selectElement ? selectElement.value : 'No encontrado');
+                            }, 100);
                         } else {
                             console.log('No se encontró mapeo para código:', docTypeCode);
                             this.formData.docType = docTypeCode;

@@ -91,6 +91,8 @@ class APIHandler(BaseHTTPRequestHandler):
                 file_path = os.path.join(frontend_dir, 'index.html')
             elif clean_path == '/checkout.html':
                 file_path = os.path.join(frontend_dir, 'checkout.html')
+            elif clean_path == '/test-mapping.html':
+                file_path = os.path.join(frontend_dir, 'test-mapping.html')
             elif clean_path.startswith('/css/'):
                 file_path = os.path.join(frontend_dir, clean_path[1:])
             elif clean_path.startswith('/js/'):

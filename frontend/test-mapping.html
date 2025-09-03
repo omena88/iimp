@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mapeo Documento</title>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <div x-data="{
+        docType: '',
+        init() {
+            console.log('Iniciando test de mapeo');
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.get('document_type')) {
+                const docTypeCode = urlParams.get('document_type');
+                console.log('Código recibido:', docTypeCode, 'tipo:', typeof docTypeCode);
+                
+                const docTypeMapping = {
+                    '1': 'DNI',
+                    '4': 'CE', 
+                    '7': 'PASAPORTE'
+                };
+                
+                console.log('Mapeo disponible:', docTypeMapping);
+                const mappedValue = docTypeMapping[docTypeCode];
+                console.log('Valor mapeado directo:', mappedValue);
+                
+                if (mappedValue) {
+                    this.docType = mappedValue;
+                    console.log('Asignado a docType:', this.docType);
+                } else {
+                    console.log('No se encontró mapeo para código:', docTypeCode);
+                    this.docType = docTypeCode;
+                }
+            }
+        }
+    }">
+        <h1>Test de Mapeo de Documento</h1>
+        <p>Tipo de documento: <span x-text="docType"></span></p>
+        <p>URL actual: <span x-text="window.location.href"></span></p>
+        
+        <h2>Pruebas:</h2>
+        <ul>
+            <li><a href="?document_type=1">Código 1 (DNI)</a></li>
+            <li><a href="?document_type=4">Código 4 (CE)</a></li>
+            <li><a href="?document_type=7">Código 7 (PASAPORTE)</a></li>
+        </ul>
+    </div>
+</body>
+</html>

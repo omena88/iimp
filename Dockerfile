@@ -40,33 +40,6 @@ RUN echo 'server { \
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
         proxy_set_header X-Forwarded-Proto $scheme; \
     } \
-    \
-    # Proxy validation API requests to validation backend \
-    location /validation/ { \
-        proxy_pass http://127.0.0.1:8001/; \
-        proxy_set_header Host $host; \
-        proxy_set_header X-Real-IP $remote_addr; \
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
-        proxy_set_header X-Forwarded-Proto $scheme; \
-    } \
-    \
-    # Direct proxy for validation API endpoints \
-    location /api/v1/validate { \
-        proxy_pass http://127.0.0.1:8001; \
-        proxy_set_header Host $host; \
-        proxy_set_header X-Real-IP $remote_addr; \
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
-        proxy_set_header X-Forwarded-Proto $scheme; \
-    } \
-    \
-    # Config endpoint for validation API \
-    location /config { \
-        proxy_pass http://127.0.0.1:8001; \
-        proxy_set_header Host $host; \
-        proxy_set_header X-Real-IP $remote_addr; \
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
-        proxy_set_header X-Forwarded-Proto $scheme; \
-    } \
 }' > /etc/nginx/sites-available/default
 
 # Create supervisor configuration directory and file
@@ -86,24 +59,16 @@ RUN echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stderr_logfile=/var/log/nginx.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'stdout_logfile=/var/log/nginx.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo '[program:simple-server]' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'command=python simple_server.py' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:fastapi]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=python -m uvicorn main:app --host 0.0.0.0 --port 8000' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'directory=/app/backend' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stderr_logfile=/var/log/simple-server.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stdout_logfile=/var/log/simple-server.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo '[program:validation-api]' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'command=python validation_api.py' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'directory=/app/backend' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stderr_logfile=/var/log/validation-api.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
-    echo 'stdout_logfile=/var/log/validation-api.out.log' >> /etc/supervisor/conf.d/supervisord.conf
+    echo 'stderr_logfile=/var/log/fastapi.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile=/var/log/fastapi.out.log' >> /etc/supervisor/conf.d/supervisord.conf
 
-# Expose ports 80 and 8001
-EXPOSE 80 8001
+# Expose port 80
+EXPOSE 80
 
 # Start supervisor with explicit config
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

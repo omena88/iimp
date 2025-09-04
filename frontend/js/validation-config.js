@@ -1,181 +1,109 @@
-/**
- * Configuración dinámica para validación de documentos
- * Detecta automáticamente si está en local o producción
- */
+// Configuración de validación de documentos
+// Este archivo configura los endpoints para la validación de documentos
 
-class ValidationConfig {
-    constructor() {
-        this.isProduction = this.detectEnvironment();
-        this.apiBaseUrl = this.getApiBaseUrl();
-        this.endpoints = this.getEndpoints();
-    }
-
-    /**
-     * Detecta si estamos en producción o desarrollo
-     */
-    detectEnvironment() {
-        const hostname = window.location.hostname;
-        return hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '';
-    }
-
-    /**
-     * Obtiene la URL base de la API según el entorno
-     */
-    getApiBaseUrl() {
-        if (this.isProduction) {
-            // En producción, usar el proxy de nginx en el mismo dominio
-            return window.location.origin;
-        } else {
-            return 'http://localhost:8001';
-        }
-    }
-
-    /**
-     * Obtiene los endpoints de validación
-     */
-    getEndpoints() {
-        return {
-            sme: `${this.apiBaseUrl}/api/v1/validate-sme-document`,
-            academic: `${this.apiBaseUrl}/api/v1/validate-academic-document`,
-            general: `${this.apiBaseUrl}/api/v1/validate-document`,
-            config: `${this.apiBaseUrl}/config`
-        };
-    }
-
-    /**
-     * Valida un documento usando la nueva API
-     */
-    async validateDocument(formData, validationType = 'general') {
-        try {
-            console.log(`[ValidationConfig] Validando documento tipo: ${validationType}`);
-            
-            // Determinar el endpoint correcto
-            let endpoint;
-            if (validationType === 'sme') {
-                endpoint = this.endpoints.sme;
-            } else if (validationType === 'academic') {
-                // Verificar si es teacher o student desde formData
-                const academicType = formData.get('academicType');
-                endpoint = academicType === 'teacher' ? this.endpoints.academic : this.endpoints.academic;
-            } else {
-                endpoint = this.endpoints.general;
-            }
-            
-            console.log(`[ValidationConfig] URL: ${endpoint}`);
-            console.log(`[ValidationConfig] Entorno: ${this.isProduction ? 'Producción' : 'Desarrollo'}`);
-
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: formData,
-                // No establecer Content-Type para multipart/form-data
-                headers: {
-                    'Accept': 'application/json'
+(function() {
+    'use strict';
+    
+    // Configuración base
+    const BASE_URL = window.location.origin;
+    const API_BASE = `${BASE_URL}/api/v1`;
+    
+    // Configuración de validación
+    const ValidationConfig = {
+        // URLs de los endpoints específicos
+        endpoints: {
+            sme: `${API_BASE}/validate-sme-document`,
+            academic: `${API_BASE}/validate-academic-document`,
+            general: `${API_BASE}/validate-document` // Fallback para compatibilidad
+        },
+        
+        // Método principal para validar documentos
+        async validateDocument(formData, validationType = 'general') {
+            try {
+                console.log(`Validando documento - Tipo: ${validationType}`);
+                
+                // Determinar el endpoint correcto
+                let endpoint;
+                let requestFormData = new FormData();
+                
+                if (validationType === 'sme') {
+                    endpoint = this.endpoints.sme;
+                    // Mapear campos para el endpoint SME
+                    requestFormData.append('document', formData.get('file'));
+                    requestFormData.append('user_name', formData.get('firstName'));
+                    requestFormData.append('user_lastname', formData.get('lastName'));
+                } else if (validationType === 'academic') {
+                    endpoint = this.endpoints.academic;
+                    // Mapear campos para el endpoint académico
+                    requestFormData.append('document', formData.get('file'));
+                    requestFormData.append('user_name', formData.get('firstName'));
+                    requestFormData.append('user_lastname', formData.get('lastName'));
+                    requestFormData.append('academic_type', formData.get('academicType') || 'student');
+                } else {
+                    // Usar endpoint general como fallback
+                    endpoint = this.endpoints.general;
+                    // Mantener la estructura original para compatibilidad
+                    for (let [key, value] of formData.entries()) {
+                        requestFormData.append(key, value);
+                    }
                 }
-            });
-
-            console.log(`[ValidationConfig] Status: ${response.status}`);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`[ValidationConfig] Error response:`, errorText);
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log(`[ValidationConfig] Resultado:`, result);
-            return result;
-
-        } catch (error) {
-            console.error(`[ValidationConfig] Error en validación:`, error);
-            throw error;
-        }
-    }
-
-    /**
-     * Obtiene la configuración del servidor
-     */
-    async getServerConfig() {
-        try {
-            const response = await fetch(this.endpoints.config);
-            if (response.ok) {
-                return await response.json();
-            }
-        } catch (error) {
-            console.warn('[ValidationConfig] No se pudo obtener configuración del servidor:', error);
-        }
-        return null;
-    }
-
-    /**
-     * Verifica la conectividad con la API
-     */
-    async checkApiHealth() {
-        try {
-            const response = await fetch(this.apiBaseUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
+                
+                console.log(`Enviando petición a: ${endpoint}`);
+                
+                // Realizar la petición
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: requestFormData
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Error HTTP ${response.status}:`, errorText);
+                    throw new Error(`Error del servidor: ${response.status}`);
                 }
-            });
-            return response.ok;
-        } catch (error) {
-            console.error('[ValidationConfig] API no disponible:', error);
-            return false;
+                
+                const result = await response.json();
+                console.log('Respuesta del servidor:', result);
+                
+                return result;
+                
+            } catch (error) {
+                console.error('Error en validación:', error);
+                throw error;
+            }
+        },
+        
+        // Método para obtener configuración del servidor
+        async getConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/config`);
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (error) {
+                console.warn('No se pudo obtener configuración del servidor:', error);
+            }
+            return null;
         }
-    }
-
-    /**
-     * Inicializa la configuración y verifica conectividad
-     */
-    async initialize() {
-        console.log('[ValidationConfig] Inicializando...');
-        console.log(`[ValidationConfig] Entorno detectado: ${this.isProduction ? 'Producción' : 'Desarrollo'}`);
-        console.log(`[ValidationConfig] API Base URL: ${this.apiBaseUrl}`);
-
-        const isHealthy = await this.checkApiHealth();
-        if (!isHealthy) {
-            console.warn('[ValidationConfig] API no responde, usando configuración de respaldo');
-        }
-
-        const serverConfig = await this.getServerConfig();
-        if (serverConfig) {
-            console.log('[ValidationConfig] Configuración del servidor:', serverConfig);
-        }
-
-        return {
-            isHealthy,
-            environment: this.isProduction ? 'production' : 'development',
-            apiBaseUrl: this.apiBaseUrl,
-            endpoints: this.endpoints,
-            serverConfig
-        };
-    }
-}
-
-// Crear instancia global
-const validationConfig = new ValidationConfig();
-
-// Función de compatibilidad para el código existente
-window.validateDocument = async function(formData, validationType = 'general') {
-    return await validationConfig.validateDocument(formData, validationType);
-};
-
-// Exportar para uso en módulos
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ValidationConfig, validationConfig };
-}
-
-// Inicializar automáticamente cuando se carga la página
-if (typeof window !== 'undefined') {
-    window.addEventListener('DOMContentLoaded', async () => {
+    };
+    
+    // Exponer la configuración globalmente
+    window.validationConfig = ValidationConfig;
+    
+    // Inicializar configuración al cargar la página
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('Inicializando configuración de validación...');
+        
         try {
-            const initResult = await validationConfig.initialize();
-            console.log('[ValidationConfig] Inicialización completada:', initResult);
-            
-            // Hacer disponible globalmente
-            window.validationConfig = validationConfig;
+            const config = await ValidationConfig.getConfig();
+            if (config) {
+                console.log('Configuración del servidor obtenida:', config);
+            }
         } catch (error) {
-            console.error('[ValidationConfig] Error en inicialización:', error);
+            console.warn('Error al obtener configuración:', error);
         }
+        
+        console.log('Configuración de validación lista');
     });
-}
+    
+})();

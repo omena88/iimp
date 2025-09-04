@@ -13,18 +13,7 @@ services:
     restart: unless-stopped
     container_name: iimp-checkout-system
 
-  validation-api:
-    build: .
-    ports:
-      - "8001:8001"
-    environment:
-      - ENVIRONMENT=production
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    volumes:
-      - ./backend:/app/backend
-    restart: unless-stopped
-    container_name: iimp-validation-api
-    command: ["python", "/app/backend/validation_api.py"]
+
 
   # Development service with hot reload
   iimp-dev:

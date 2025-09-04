@@ -22,7 +22,8 @@ class Config:
     def api_base_url(self) -> str:
         """URL base de la API según el entorno"""
         if self.is_production:
-            return "https://apis-iimp-web.di8b44.easypanel.host"
+            # En producción, usar el proxy de nginx en el mismo dominio
+            return "https://iimp-web.di8b44.easypanel.host"
         else:
             return "http://localhost:8001"
     
@@ -64,7 +65,8 @@ class Config:
                 "https://apis-iimp-web.di8b44.easypanel.host",
                 "https://iimp-web.di8b44.easypanel.host",
                 "https://www.iimp.org.pe",
-                "https://iimp.org.pe"
+                "https://iimp.org.pe",
+                "*"  # Permitir todos los orígenes temporalmente para debugging
             ]
         else:
             return ["*"]

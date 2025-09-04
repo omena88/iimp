@@ -50,7 +50,7 @@ def update_html_footers(version: str) -> List[str]:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            updated_content = re.sub(footer_pattern, f'\\1{version}', content)
+            updated_content = re.sub(footer_pattern, f'\\g<1>{version}', content)
             
             if updated_content != content:
                 with open(file_path, 'w', encoding='utf-8') as f:

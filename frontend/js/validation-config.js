@@ -23,7 +23,8 @@ class ValidationConfig {
      */
     getApiBaseUrl() {
         if (this.isProduction) {
-            return 'https://apis-iimp-web.di8b44.easypanel.host';
+            // En producción, usar el proxy de nginx en el mismo dominio
+            return window.location.origin;
         } else {
             return 'http://localhost:8001';
         }

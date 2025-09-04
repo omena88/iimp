@@ -1,8 +1,23 @@
 {
-  "version": "1.0.1",
-  "build": "002",
-  "release_date": "2025-01-03",
+  "version": "1.0.2",
+  "build": "003",
+  "release_date": "2025-01-14",
   "changes": [
+    {
+      "version": "1.0.2",
+      "date": "2025-01-14",
+      "description": "Corrección de validación académica y mapeo de tipos",
+      "features": [
+        "Mapeo automático de academic_type de inglés a español (teacher->docente, student->estudiante)",
+        "Validación académica completamente funcional para docentes y estudiantes",
+        "Pruebas exitosas con documentos reales de Oscar Mena"
+      ],
+      "fixes": [
+        "Corrección de TypeError en checkout.html (this.currentLanguage -> this.language)",
+        "Mapeo correcto de tipos académicos en validation_api.py",
+        "Validación SME y académica funcionando al 100%"
+      ]
+    },
     {
       "version": "1.0.1",
       "date": "2025-01-03",

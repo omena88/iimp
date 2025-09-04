@@ -666,7 +666,7 @@
                     if (productId === '151' || productId === '152') {
                         // Productos académicos: solo peruanos (DNI)
                         if (this.formData.docType !== 'DNI') {
-                            this.showError(this.translations[this.currentLanguage].academicPeruOnly || 'Los productos académicos están disponibles solo para peruanos con DNI.');
+                            this.showError(this.translations[this.language].academicPeruOnly || 'Los productos académicos están disponibles solo para peruanos con DNI.');
                             return false;
                         }
                         // Si es DNI, verificar si necesita validación documental
@@ -679,7 +679,7 @@
                     if (productId === '150') {
                         // Producto SME: solo peruanos (DNI)
                         if (this.formData.docType !== 'DNI') {
-                            this.showError(this.translations[this.currentLanguage].smePeruOnly || 'El producto SME está disponible solo para peruanos con DNI.');
+                            this.showError(this.translations[this.language].smePeruOnly || 'El producto SME está disponible solo para peruanos con DNI.');
                             return false;
                         }
                         // Si es DNI, verificar si necesita validación documental
@@ -1227,29 +1227,22 @@
                             academicType: this.academicType
                         });
                         
-                        // Detectar URL del backend automáticamente
-                        const getApiBaseUrl = () => {
-                            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                                return 'http://localhost:8000/api/v1';
-                            }
-                            return `${window.location.protocol}//${window.location.host}/api/v1`;
-                        };
-                        
-                        const apiUrl = `${getApiBaseUrl()}/validate-document`;
-                        console.log('Realizando petición POST a', apiUrl);
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        console.log('Respuesta recibida:', response.status, response.statusText);
-                        
-                        if (!response.ok) {
-                            console.error('Error HTTP:', response.status, await response.text());
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                        // Usar la nueva configuración de validación
+                        if (!window.validationConfig) {
+                            throw new Error('Configuración de validación no disponible');
                         }
                         
-                        const result = await response.json();
+                        // Determinar el tipo de validación específico
+                        let validationType = 'general';
+                        if (this.documentValidationType === 'sme') {
+                            validationType = 'sme';
+                        } else if (this.documentValidationType === 'academic') {
+                            validationType = this.academicType === 'teacher' ? 'academic' : 'academic';
+                        }
+                        
+                        console.log(`Usando nueva API de validación - Tipo: ${validationType}`);
+                        const result = await window.validationConfig.validateDocument(formData, validationType);
+                        
                         console.log('Resultado de validación:', result);
                         
                         if (result.valid) {
@@ -1418,9 +1411,12 @@
     <!-- Footer sutil -->
     <footer class="mt-16 py-4 text-center">
         <p class="text-xs text-gray-400 font-light">
-            Desarrollado por Goodlinks - v1.0.1
+            Desarrollado por Goodlinks - v1.0.2
         </p>
     </footer>
+
+    <!-- Script de configuración de validación -->
+    <script src="js/validation-config.js"></script>
 
 </body>
 </html>
